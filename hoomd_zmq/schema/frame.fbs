@@ -1,0 +1,15 @@
+namespace HZMsg;
+
+struct Scalar4 {
+  x: float;
+  y: float;
+  z: float;
+  w: float;
+}
+
+table Frame {
+  N: int;
+  positions:[Scalar4];  
+}
+
+root_type Frame;
