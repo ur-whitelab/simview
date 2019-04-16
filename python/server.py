@@ -4,8 +4,9 @@ import zmq, flatbuffers, time
 
 context = zmq.Context()
 sock = context.socket(zmq.PUB)
-sock.connect('tcp://localhost:5000')
+sock.connect('tcp://127.0.0.1:5000')
 N = 10
+print('Starting Loop')
 while True:
     builder = flatbuffers.Builder(0)
     frame.FrameStartPositionsVector(builder, N)
@@ -18,6 +19,7 @@ while True:
     builder.Finish(frame.FrameEnd(builder))
 
     buffer = builder.Output()
-    sock.send_multipart(['frame'.encode(), buffer])
+    sock.send_multipart(['frame-update'.encode(), buffer])
     time.sleep(1)
+    print('.', end='', sep='')
 

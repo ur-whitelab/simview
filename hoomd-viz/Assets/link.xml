@@ -1,0 +1,6 @@
+﻿<linker>
+  <assembly fullname="System.Core">
+    <type fullname="System.Linq.Expressions.Interpreter.LightLambda" preserve="all" />
+    <type fullname="System.Threading.Tasks" preserve="all" />
+  </assembly>
+</linker>
