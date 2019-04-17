@@ -11,7 +11,7 @@ public class CommClient : MonoBehaviour
 {
 
     [Tooltip("Follows ZeroMQ syntax")]
-    public string ServerUri = "tcp://127.0.0.1:8076";
+    public string ServerUri = "tcp://localhost:5000";
 
     public delegate void NewFrameAction(Frame frame);
     public event NewFrameAction OnNewFrame;
@@ -29,7 +29,7 @@ public class CommClient : MonoBehaviour
         FrameClient = new SubscriberSocket();
         FrameClient.Subscribe("frame-update");
         FrameClient.Connect(ServerUri);
-
+        Debug.Log("Socket connected");
         FramePoller = new NetMQPoller { FrameClient };
         FrameResponseTask = new TaskCompletionSource<byte[]>();
     
@@ -50,12 +50,30 @@ public class CommClient : MonoBehaviour
     {
         if(FrameResponseTask.Task.IsCompleted)
         {
-            // have new data
+            // have new data            
             var buf = new ByteBuffer(FrameResponseTask.Task.Result);
             var frame = Frame.GetRootAsFrame(buf);
-            Debug.Log("Received message containing" + frame.N + " particles\n");
             if (OnNewFrame != null)
                 OnNewFrame(frame);
+            FrameResponseTask = new TaskCompletionSource<byte[]>();
         }
     }
+
+    void OnApplicationQuit()//cleanup
+    {
+
+        try
+        {
+            FramePoller.StopAsync();
+        }
+
+        catch
+        {
+            UnityEngine.Debug.Log("Tried to stopasync while the poller wasn't running! Oops.");
+        }
+        FramePoller.Dispose();
+        FrameClient.Close();        
+        FrameClient.Dispose();
+    }
 }
+

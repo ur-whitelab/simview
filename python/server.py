@@ -1,11 +1,12 @@
 import HZMsg.Frame as frame
 import HZMsg.Scalar4 as scalar4
 import zmq, flatbuffers, time
+import sys
 
 context = zmq.Context()
 sock = context.socket(zmq.PUB)
-sock.connect('tcp://127.0.0.1:5000')
-N = 10
+sock.bind('tcp://*:5000')
+N = 20
 print('Starting Loop')
 while True:
     builder = flatbuffers.Builder(0)
@@ -20,6 +21,6 @@ while True:
 
     buffer = builder.Output()
     sock.send_multipart(['frame-update'.encode(), buffer])
-    time.sleep(1)
-    print('.', end='', sep='')
-
+    print('.{}.'.format(len(buffer)), end='', sep='')	
+    time.sleep(1)    
+    sys.stdout.flush()

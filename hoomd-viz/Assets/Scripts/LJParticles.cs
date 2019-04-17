@@ -3,71 +3,65 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(ParticleSystem))]
 public class LJParticles : MonoBehaviour
 {
 
-    public int RenderSplit = 500;
-    private List<Matrix4x4[]> transformList = new List<Matrix4x4[]>();
-    private Mesh mesh;
-    private Material material;
+    ParticleSystem m_System;
+    ParticleSystem.Particle[] m_Particles;
     private int N = 0;
-
-    public static IEnumerable<List<T>> splitList<T>(List<T> locations, int nSize = 500)
-    {
-        for (int i = 0; i < locations.Count; i += nSize)
-        {
-            yield return locations.GetRange(i, System.Math.Min(nSize, locations.Count - i));
-        }
-    }
 
     // Start is called before the first frame update
     void Start()
     {
         var cc = GameObject.Find("CommClient").GetComponent<CommClient>();
         cc.OnNewFrame += ProcessFrameUpdate;
-        mesh = GetComponent<MeshFilter>().mesh;
-        material = GetComponent<Renderer>().material;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void ProcessFrameUpdate(Frame frame)
     {
-        for(int i = 0; i < transformList.Count; i++)
-        {            
-            Graphics.DrawMeshInstanced(mesh, 0, material, transformList[i]);
+        InitializeIfNeeded();
+
+        // GetParticles is allocation free because we reuse the m_Particles buffer between updates
+        int last_N = N;
+        N = System.Math.Max(frame.N, N);
+        m_System.GetParticles(m_Particles, N);
+
+        for (int i = 0; i < N; i++)
+        {
+            if (i < frame.N)
+            {
+                m_Particles[i].remainingLifetime = 1;
+                m_Particles[i].position = new Vector3(frame.Positions(i).Value.X, frame.Positions(i).Value.Y, frame.Positions(i).Value.Z);
+            }
+            else if (i < last_N)                
+            {
+                m_Particles[i].remainingLifetime = 0;
+            }
         }
+
+        // Apply the particle changes to the Particle System
+        m_System.SetParticles(m_Particles, N);
     }
 
-    void ProcessFrameUpdate(Frame frame)
+    void InitializeIfNeeded()
     {
-        if(frame.N != N)
+        if (m_System == null)
+            m_System = GetComponent<ParticleSystem>();
+
+        if (m_Particles == null || m_Particles.Length < m_System.main.maxParticles)
+            m_Particles = new ParticleSystem.Particle[m_System.main.maxParticles];
+
+        int max = m_System.main.maxParticles;
+        m_System.GetParticles(m_Particles, max);
+
+        for (int i = 0; i < N; i++)
         {
-            N = frame.N;
-            var count = N;
-            transformList = new List<Matrix4x4[]>(N / RenderSplit + 1);
-            for (int i = 0; count > 0; i++)
-            {
-                transformList[i] = new Matrix4x4[System.Math.Min(count, RenderSplit)];
-                count -= transformList[i].Length;
-                for (int j = 0; j < RenderSplit; j++)
-                {
-                    if (i * RenderSplit + j == N)
-                        break;
-                    Matrix4x4 matrix = new Matrix4x4();
-                    matrix.SetTRS(Vector3.zero, Quaternion.Euler(Vector3.zero), Vector3.one);
-                    transformList[i][j] = matrix;
-                }
-            }            
+            m_Particles[i].startSize = m_System.main.startSize.constant;
+            m_Particles[i].startColor = m_System.main.startColor.color;
         }
 
-        for (int i = 0; i < transformList.Count; i++)
-        {
-            for(int j = 0; i * RenderSplit + j < N; j++)
-            {
-                transformList[i][j][0, 3] = frame.Positions(i).Value.X;
-                transformList[i][j][1, 3] = frame.Positions(i).Value.Y;
-                transformList[i][j][2, 3] = frame.Positions(i).Value.Z;
-            }            
-        }
+        // Apply the particle changes to the Particle System
+        m_System.SetParticles(m_Particles, max);
     }
 }
