@@ -1,21 +1,42 @@
 # Maintainer: Andrew White
 
 if (NOT BUILD_MD)
-    message(FATAL_ERROR "MPCD package cannot be built without MD.")
+    message(FATAL_ERROR "HZMQ package cannot be built without MD.")
 endif(NOT BUILD_MD)
 
-set(COMPONENT_NAME zmq)
+set(COMPONENT_NAME hzmq)
 
 set(_${COMPONENT_NAME}_sources
     module.cc
     ZMQHook.cc
     )
 
+# get zeromq
+## load in pkg-config support
+find_package(PkgConfig)
+## use pkg-config to get hints for 0mq locations
+pkg_check_modules(PC_ZeroMQ QUIET zmq)
+## use the hint from above to find where 'zmq.hpp' is located
+find_path(ZeroMQ_INCLUDE_DIR
+        NAMES zmq.hpp
+        PATHS ${PC_ZeroMQ_INCLUDE_DIRS}
+        )
+
+## use the hint from about to find the location of libzmq
+find_library(ZeroMQ_LIBRARY
+        NAMES zmq
+        PATHS ${PC_ZeroMQ_LIBRARY_DIRS}
+        )
+
+add_library (_${COMPONENT_NAME} SHARED ${_${COMPONENT_NAME}_sources})
+
 # Need to define NO_IMPORT_ARRAY in every file but module.cc
 set_source_files_properties(${_${COMPONENT_NAME}_sources} ${_${COMPONENT_NAME}_cu_sources} PROPERTIES COMPILE_DEFINITIONS NO_IMPORT_ARRAY)
 
+target_include_directories(_${COMPONENT_NAME} PRIVATE ${ZeroMQ_INCLUDE_DIR})
+
 # link the library to its dependencies
-target_link_libraries(_${COMPONENT_NAME} _hoomd _md ${HOOMD_LIBRARIES})
+target_link_libraries(_${COMPONENT_NAME} _hoomd _md ${HOOMD_LIBRARIES} ${ZeroMQ_LIBRARY})
 
 # if we are compiling with MPI support built in, set appropriate
 # compiler/linker flags

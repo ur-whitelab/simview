@@ -298,7 +298,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 590181869}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aaf0e675446f32a4ea64037ca8dbdf83, type: 3}
+  m_Script: {fileID: 11500000, guid: 54fb38eb020507e4889bcd993dda610b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!198 &590181873
@@ -4931,7 +4931,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 644285887}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c622c6d41b6912043a084250c594d7a8, type: 3}
+  m_Script: {fileID: 11500000, guid: cc7ebfb8ffd064845bc2e2f98320ba56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ServerUri: tcp://localhost:5000

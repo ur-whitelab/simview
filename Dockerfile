@@ -3,8 +3,7 @@ MAINTAINER Andrew White <andrew.white@rochester.edu>
 
 RUN apt-get update && apt-get install -y git cmake gcc\
      sqlite3 wget libsqlite3-dev bash-completion g++ \
-     zlib1g-dev libtcmalloc-minimal4 libopenmpi-dev \
-     openmpi-bin && apt-get clean
+     zlib1g-dev libtcmalloc-minimal4 libzmq3-dev && apt-get clean
 
 RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
          -O /srv/miniconda.sh
@@ -16,6 +15,7 @@ ENV PATH="/usr/local/miniconda/envs/py36/bin:$PATH"
 
 RUN conda config --add channels glotzer && \
         conda install -y fresnel gsd freud &&  conda clean -a
+
 RUN conda install -y Pillow \
         h5py \
         ipykernel \
@@ -32,8 +32,8 @@ RUN git clone --recursive https://bitbucket.org/glotzer/hoomd-blue /srv/hoomd-bl
 WORKDIR /srv/hoomd-blue
 
 #Add plugin
-RUN mkdir -p zmq
-RUN cd hoomd && ln -s ../zmq zmq
+RUN mkdir -p hzmq
+RUN cd hoomd && ln -s ../hzmq hzmq
 
 
 ENV PYTHONPATH=$PYTHONPATH:/srv/hoomd-blue/build

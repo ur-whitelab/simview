@@ -9,9 +9,9 @@
 
 // specify the python module. Note that the name must expliclty match the PROJECT() name provided in CMakeLists
 // (with an underscore in front)
-PYBIND11_PLUGIN(_zmq)
+PYBIND11_PLUGIN(_hzmq)
     {
-    pybind11::module m("_zmq");
+    pybind11::module m("_hzmq");
     export_ZMQHook(m);
     return m.ptr();
     }

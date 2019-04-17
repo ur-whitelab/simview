@@ -1,9 +1,26 @@
-from hoomd.zmq import _zmq, hoomd
-import zmq
+from hoomd.zmq import _hzmq
+import hoomd
 
-class tfcompute(hoomd.compute._compute):
-    def __init__(self, uri):
-        self.ctx = zmq.Context()
-        hoomd.context.msg.notice(2, 'Opening PUB Socket on {}.\n'.format(ur))
-        self.sock = self.ctx.socket(zmq.PUB)
-        self.sock.connect(uri)
+class hzmq:
+    def __init__(self, uri, period=100):
+
+        if not hoomd.init.is_initialized():
+            raise RuntimeError('Must create ZMQ after hoomd initialization')
+
+        self.cpp_hook = _hzmq.ZMQHook(hoomd.context.current.system_definition, period, uri)
+
+        integrator = hoomd.context.current.integrator
+        if integrator is None:
+            raise ValueError('Must have integrator set to receive forces')
+        self.enabled = False
+        self.enable()
+
+    def enable(self):
+        if not self.enabled:
+            hoomd.context.current.integrator.cpp_integrator.setHalfStepHook(self.cpp_hook)
+            self.enabled = True
+
+    def disable(self):
+        if self.enabled:
+            hoomd.context.current.integrator.cpp_integrator.removeHalfStepHook(self.cpp_hook)
+            self.enabled = False

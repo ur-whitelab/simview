@@ -7,6 +7,9 @@
 
 
 #include <hoomd/HalfStepHook.h>
+#include "flatbuffers/flatbuffers.h"
+#include "frame_generated.h"
+#include <zmq.hpp>
 
 // pybind11 is used to create the python bindings to the C++ object,
 // but not if we are compiling GPU kernels
@@ -20,16 +23,26 @@
 
 class ZMQHook : public HalfStepHook {
 
-  void update(unsigned int timestep) override {
-    _f.computeForces(timestep);
-  }
+public:
+  ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri);
 
-  // called for half step hook
-  void setSystemDefinition(std::shared_ptr<SystemDefinition> sysdef) override {
-    //pass
-  }
+  void update(unsigned int timestep) override;
+  void setSystemDefinition(std::shared_ptr<SystemDefinition> sysdef);
 
+private:
+
+  void updateSize(unsigned int N);
+
+  zmq::context_t m_context;
+  zmq::socket_t m_socket;
+  zmq::message_t* m_message;
+  std::shared_ptr<const ParticleData> m_pdata;
+  std::shared_ptr<const ExecutionConfiguration> m_exec_conf;
+  flatbuffers::FlatBufferBuilder* m_fbb;
+  unsigned int m_period;
+  unsigned int m_N;
 };
 
+void export_ZMQHook(pybind11::module& m);
 
 #endif  // _ZMQ_HOOK_H_
