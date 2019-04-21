@@ -32,14 +32,26 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Scalar4 FLATBUFFERS_FINAL_CLASS {
   float x() const {
     return flatbuffers::EndianScalar(x_);
   }
+  void mutate_x(float _x) {
+    flatbuffers::WriteScalar(&x_, _x);
+  }
   float y() const {
     return flatbuffers::EndianScalar(y_);
+  }
+  void mutate_y(float _y) {
+    flatbuffers::WriteScalar(&y_, _y);
   }
   float z() const {
     return flatbuffers::EndianScalar(z_);
   }
+  void mutate_z(float _z) {
+    flatbuffers::WriteScalar(&z_, _z);
+  }
   float w() const {
     return flatbuffers::EndianScalar(w_);
+  }
+  void mutate_w(float _w) {
+    flatbuffers::WriteScalar(&w_, _w);
   }
 };
 FLATBUFFERS_STRUCT_END(Scalar4, 16);
@@ -52,8 +64,14 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t N() const {
     return GetField<int32_t>(VT_N, 0);
   }
+  bool mutate_N(int32_t _N) {
+    return SetField<int32_t>(VT_N, _N, 0);
+  }
   const flatbuffers::Vector<const Scalar4 *> *positions() const {
     return GetPointer<const flatbuffers::Vector<const Scalar4 *> *>(VT_POSITIONS);
+  }
+  flatbuffers::Vector<const Scalar4 *> *mutable_positions() {
+    return GetPointer<flatbuffers::Vector<const Scalar4 *> *>(VT_POSITIONS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -112,6 +130,10 @@ inline const HZMsg::Frame *GetFrame(const void *buf) {
 
 inline const HZMsg::Frame *GetSizePrefixedFrame(const void *buf) {
   return flatbuffers::GetSizePrefixedRoot<HZMsg::Frame>(buf);
+}
+
+inline Frame *GetMutableFrame(void *buf) {
+  return flatbuffers::GetMutableRoot<Frame>(buf);
 }
 
 inline bool VerifyFrameBuffer(

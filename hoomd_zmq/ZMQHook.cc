@@ -8,7 +8,7 @@
 ZMQHook::ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri) :
  m_context(1), m_socket(m_context, ZMQ_PUB),
 m_pdata(sysdef->getParticleData()),
-m_exec_conf(sysdef->getParticleData()->getExecConf()), m_period(period), m_N(0) {
+m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(period), m_N(0) {
 
     m_socket.bind(uri);
       m_exec_conf->msg->notice(2)
@@ -60,10 +60,10 @@ void ZMQHook::update(unsigned int timestep)  {
         updateSize(N);
 
       // now we just copy to buffer
-      auto frame = HZMsg::GetFrame(m_fbb);
+      auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
       // I'm too lazy to figure out how to get the offset with non-const
       // the addition is because vectors start with size
-      memcpy((char* ) (frame->positions()) + sizeof( flatbuffers::uoffset_t ), positions_data.data, N * sizeof(Scalar4));
+      memcpy(frame->mutable_positions(), positions_data.data, N * sizeof(Scalar4));
 
       // set up message
       zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize(), my_free);
