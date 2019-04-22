@@ -1,4 +1,4 @@
-from hoomd.zmq import _hzmq
+from hoomd.hzmq import _hzmq
 import hoomd
 
 class hzmq:

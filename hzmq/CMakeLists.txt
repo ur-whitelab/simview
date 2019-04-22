@@ -12,21 +12,28 @@ set(_${COMPONENT_NAME}_sources
     )
 
 # get zeromq
-## load in pkg-config support
+## load in pkg-config support 
+set(ZeroMQ_INCLUDE_DIR "")
+set(ZeroMQ_LIBRARY zmq)
 find_package(PkgConfig)
-## use pkg-config to get hints for 0mq locations
-pkg_check_modules(PC_ZeroMQ QUIET zmq)
-## use the hint from above to find where 'zmq.hpp' is located
-find_path(ZeroMQ_INCLUDE_DIR
-        NAMES zmq.hpp
-        PATHS ${PC_ZeroMQ_INCLUDE_DIRS}
-        )
-
-## use the hint from about to find the location of libzmq
-find_library(ZeroMQ_LIBRARY
-        NAMES zmq
-        PATHS ${PC_ZeroMQ_LIBRARY_DIRS}
-        )
+if(PkgConfig_FOUND)
+    message("Using pkgconfig to find ZeroMQ")
+    ## use pkg-config to get hints for 0mq locations
+    pkg_check_modules(PC_ZeroMQ zmq)
+    if(PKG_CONFIG_FOUND)
+        ## use the hint from above to find where 'zmq.hpp' is located
+    	find_path(ZeroMQ_INCLUDE_DIR
+		  NAMES zmq.hpp
+		  PATHS ${PC_ZeroMQ_INCLUDE_DIRS})
+    
+    ## use the hint from about to find the location of libzmq
+    find_library(ZeroMQ_LIBRARY
+                 NAMES zmq
+                 PATHS ${PC_ZeroMQ_LIBRARY_DIRS})
+    else()
+      message("Could find ZeroMQ. Will attempt to build anyway")      
+    endif()
+endif()
 
 add_library (_${COMPONENT_NAME} SHARED ${_${COMPONENT_NAME}_sources})
 

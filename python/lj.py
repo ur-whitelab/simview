@@ -1,6 +1,6 @@
 import hoomd
 import hoomd.md
-import hoomd.zmq
+import hoomd.hzmq
 
 
 hoomd.context.initialize()
