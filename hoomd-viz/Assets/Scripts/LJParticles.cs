@@ -32,9 +32,10 @@ public class LJParticles : MonoBehaviour
             if (i < frame.N)
             {
                 m_Particles[i].remainingLifetime = 1;
-                m_Particles[i].position = new Vector3(frame.Positions(i).Value.X, frame.Positions(i).Value.Y, frame.Positions(i).Value.Z);
+                Debug.Log("Received new particle at " + frame.Positions(i).Value.X);
+                m_Particles[i].position = new Vector3(frame.Positions(i).Value.X, frame.Positions(i).Value.W, frame.Positions(i).Value.Y);
             }
-            else if (i < last_N)                
+            else if (i < last_N)
             {
                 m_Particles[i].remainingLifetime = 0;
             }

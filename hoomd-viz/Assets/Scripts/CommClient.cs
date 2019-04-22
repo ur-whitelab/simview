@@ -32,12 +32,13 @@ public class CommClient : MonoBehaviour
         Debug.Log("Socket connected");
         FramePoller = new NetMQPoller { FrameClient };
         FrameResponseTask = new TaskCompletionSource<byte[]>();
-    
+
 
         // create callback for when socket is ready
         // This code will probably die in mobile phones due to use of threading (?) and/or Asyncio
         FrameClient.ReceiveReady += (s, a) =>
         {
+            Debug.Log("Message received!");
             var msg = a.Socket.ReceiveMultipartBytes();
             while (!FrameResponseTask.TrySetResult(msg[1])) ;
         };
@@ -50,7 +51,7 @@ public class CommClient : MonoBehaviour
     {
         if(FrameResponseTask.Task.IsCompleted)
         {
-            // have new data            
+            // have new data
             var buf = new ByteBuffer(FrameResponseTask.Task.Result);
             var frame = Frame.GetRootAsFrame(buf);
             if (OnNewFrame != null)
@@ -59,9 +60,8 @@ public class CommClient : MonoBehaviour
         }
     }
 
-    void OnApplicationQuit()//cleanup
+    void onDestroy()
     {
-
         try
         {
             FramePoller.StopAsync();
@@ -72,7 +72,23 @@ public class CommClient : MonoBehaviour
             UnityEngine.Debug.Log("Tried to stopasync while the poller wasn't running! Oops.");
         }
         FramePoller.Dispose();
-        FrameClient.Close();        
+        FrameClient.Close();
+        FrameClient.Dispose();
+    }
+
+    void OnApplicationQuit()//cleanup
+    {
+        try
+        {
+            FramePoller.StopAsync();
+        }
+
+        catch
+        {
+            UnityEngine.Debug.Log("Tried to stopasync while the poller wasn't running! Oops.");
+        }
+        FramePoller.Dispose();
+        FrameClient.Close();
         FrameClient.Dispose();
     }
 }
