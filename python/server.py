@@ -20,7 +20,7 @@ while True:
     builder.Finish(frame.FrameEnd(builder))
 
     buffer = builder.Output()
-    sock.send_multipart(['frame-update'.encode(), buffer])
+    sock.send(buffer)
     print('.{}.'.format(len(buffer)), end='', sep='')	
     time.sleep(1)    
     sys.stdout.flush()

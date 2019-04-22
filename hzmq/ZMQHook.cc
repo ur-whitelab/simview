@@ -4,6 +4,7 @@
 #include "ZMQHook.h"
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 ZMQHook::ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri) :
  m_context(1), m_socket(m_context, ZMQ_PUB),
@@ -66,11 +67,14 @@ void ZMQHook::update(unsigned int timestep)  {
       memcpy(frame->mutable_positions(), positions_data.data, N * sizeof(Scalar4));
 
       // set up message
+      zmq::multipart_t multipart;
       zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize(), my_free);
+      multipart.push(std::move(msg));
+      multipart.push(zmq::message_t("frame-update", 12));
 
       // send over wire
       // message should already refer to flatbuffer pointer
-      m_socket.send(msg);
+      multipart.send(m_socket);
   }
 }
 

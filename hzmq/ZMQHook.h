@@ -10,6 +10,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "frame_generated.h"
 #include "zmq.hpp"
+#include "zmq_addon.hpp"
 
 // pybind11 is used to create the python bindings to the C++ object,
 // but not if we are compiling GPU kernels
