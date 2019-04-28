@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <utility>
 
-ZMQHook::ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri) :
+ZMQHook::ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size) :
  m_context(1), m_socket(m_context, ZMQ_PUB),
 m_pdata(sysdef->getParticleData()),
 m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(period), m_N(0) {
@@ -23,6 +23,8 @@ m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(per
       sizeof(HZMsg::Scalar4) << ", hoomd: " << sizeof(Scalar4) << std::endl;
        throw std::runtime_error("Recompile hoomd or buffer");
     }
+
+    updateSize(message_size);
 
 }
 
@@ -57,24 +59,28 @@ void ZMQHook::update(unsigned int timestep)  {
       ArrayHandle<Scalar4> positions_data(positions, access_location::host,
                            access_mode::read);
       size_t N = positions.getNumElements();
-      if(N != m_N)
-        updateSize(N);
-
-      // now we just copy to buffer
+      
+      //get mutable frame
       auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
-      // I'm too lazy to figure out how to get the offset with non-const
-      // the addition is because vectors start with size
-      memcpy(frame->mutable_positions(), positions_data.data, N * sizeof(Scalar4));
+      int Ni = 0;
+      for(int i = 0; i < N; i += m_N) {
+        // our message will be either m_N or long enough to complete sending the positions
+        Ni = min(m_N, N - (i + m_N));
+        frame->mutate_i(i);
+        frame->mutate_N(Ni);
+        //memcpy over the positions 
+        memcpy(frame->mutable_positions(), positions_data.data[i], Ni * sizeof(Scalar4));
 
-      // set up message
-      zmq::multipart_t multipart;
-      zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize(), my_free);
-      multipart.push(std::move(msg));
-      multipart.push(zmq::message_t("frame-update", 12));
+        // set up message
+        zmq::multipart_t multipart;
+        zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize(), my_free);
+        multipart.push(std::move(msg));
+        multipart.push(zmq::message_t("frame-update", 12));
 
-      // send over wire
-      // message should already refer to flatbuffer pointer
-      multipart.send(m_socket);
+        // send over wire
+        // message should already refer to flatbuffer pointer
+        multipart.send(m_socket);
+      }
   }
 }
 
@@ -86,7 +92,7 @@ void export_ZMQHook(pybind11::module& m)
       //need to export halfstephook, since it's not exported anywhere else
     pybind11::class_<HalfStepHook, std::shared_ptr<HalfStepHook> >(m, "HalfStepHook");
     pybind11::class_<ZMQHook, std::shared_ptr<ZMQHook >, HalfStepHook>(m, "ZMQHook")
-      .def(pybind11::init<std::shared_ptr<SystemDefinition>, unsigned int, const char*>())
+      .def(pybind11::init<std::shared_ptr<SystemDefinition>, unsigned int, const char*, unsigned int>())
     ;
     }
 

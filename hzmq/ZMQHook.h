@@ -25,7 +25,7 @@
 class ZMQHook : public HalfStepHook {
 
 public:
-  ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri);
+  ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size);
 
   void update(unsigned int timestep) override;
   void setSystemDefinition(std::shared_ptr<SystemDefinition> sysdef);

@@ -2,12 +2,12 @@ from hoomd.hzmq import _hzmq
 import hoomd
 
 class hzmq:
-    def __init__(self, uri, period=100):
+    def __init__(self, uri, period=100, message_size=8):
 
         if not hoomd.init.is_initialized():
             raise RuntimeError('Must create ZMQ after hoomd initialization')
 
-        self.cpp_hook = _hzmq.ZMQHook(hoomd.context.current.system_definition, period, uri)
+        self.cpp_hook = _hzmq.ZMQHook(hoomd.context.current.system_definition, period, uri, message_size)
 
         integrator = hoomd.context.current.integrator
         if integrator is None:
