@@ -53,7 +53,7 @@ class Frame(object):
 
 def FrameStart(builder): builder.StartObject(3)
 def FrameAddN(builder, N): builder.PrependInt32Slot(0, N, 0)
-def FrameAddI(builder, i): builder.PrependInt32Slot(1, i, 0)
+def FrameAddI(builder, I): builder.PrependInt32Slot(1, I, 0)
 def FrameAddPositions(builder, positions): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(positions), 0)
 def FrameStartPositionsVector(builder, numElems): return builder.StartVector(16, numElems, 4)
 def FrameEnd(builder): return builder.EndObject()

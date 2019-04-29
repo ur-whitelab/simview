@@ -71,14 +71,16 @@ void ZMQHook::update(unsigned int timestep)  {
         // our message will be either m_N or long enough to complete sending the positions
         // why doesn't std::min work here?
         Ni = m_N < N - (i + m_N) ? m_N : N - (i + m_N);
-        frame->mutate_i(i);
+        frame->mutate_I(i);
         frame->mutate_N(Ni);
         //memcpy over the positions
         memcpy(frame->mutable_positions(), &positions_data.data[i], Ni * sizeof(Scalar4));
 
         // set up message
         zmq::multipart_t multipart;
-        zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize(), my_free);
+        // we will copy the framebuffer. Otherwise we can have repeated messages!
+        zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize());
+        // move to multipart
         multipart.push(std::move(msg));
         multipart.push(zmq::message_t("frame-update", 12));
 
