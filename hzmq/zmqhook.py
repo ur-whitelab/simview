@@ -2,7 +2,8 @@ from hoomd.hzmq import _hzmq
 import hoomd
 
 class hzmq:
-    def __init__(self, uri, period=100, message_size=8):
+    def __init__(self, uri, period=100, message_size=340):
+        #340 -> gives about 1400 byte packet which is recommended
 
         if not hoomd.init.is_initialized():
             raise RuntimeError('Must create ZMQ after hoomd initialization')

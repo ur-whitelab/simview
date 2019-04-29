@@ -26,8 +26,15 @@ class Frame(object):
         return 0
 
     # Frame
-    def Positions(self, j):
+    def I(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 0
+
+    # Frame
+    def Positions(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 16
@@ -39,13 +46,14 @@ class Frame(object):
 
     # Frame
     def PositionsLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
-def FrameStart(builder): builder.StartObject(2)
+def FrameStart(builder): builder.StartObject(3)
 def FrameAddN(builder, N): builder.PrependInt32Slot(0, N, 0)
-def FrameAddPositions(builder, positions): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(positions), 0)
+def FrameAddI(builder, i): builder.PrependInt32Slot(1, i, 0)
+def FrameAddPositions(builder, positions): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(positions), 0)
 def FrameStartPositionsVector(builder, numElems): return builder.StartVector(16, numElems, 4)
 def FrameEnd(builder): return builder.EndObject()

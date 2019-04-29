@@ -16,9 +16,13 @@ public struct Scalar4 : IFlatbufferObject
   public Scalar4 __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public float X { get { return __p.bb.GetFloat(__p.bb_pos + 0); } }
+  public void MutateX(float x) { __p.bb.PutFloat(__p.bb_pos + 0, x); }
   public float Y { get { return __p.bb.GetFloat(__p.bb_pos + 4); } }
+  public void MutateY(float y) { __p.bb.PutFloat(__p.bb_pos + 4, y); }
   public float Z { get { return __p.bb.GetFloat(__p.bb_pos + 8); } }
+  public void MutateZ(float z) { __p.bb.PutFloat(__p.bb_pos + 8, z); }
   public float W { get { return __p.bb.GetFloat(__p.bb_pos + 12); } }
+  public void MutateW(float w) { __p.bb.PutFloat(__p.bb_pos + 12, w); }
 
   public static Offset<Scalar4> CreateScalar4(FlatBufferBuilder builder, float X, float Y, float Z, float W) {
     builder.Prep(4, 16);

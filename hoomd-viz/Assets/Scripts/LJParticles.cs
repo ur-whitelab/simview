@@ -23,22 +23,13 @@ public class LJParticles : MonoBehaviour
         InitializeIfNeeded();
 
         // GetParticles is allocation free because we reuse the m_Particles buffer between updates
-        int last_N = N;
-        N = System.Math.Max(frame.N, N);
         m_System.GetParticles(m_Particles, N);
 
-        for (int i = 0; i < N; i++)
+        for (int i = frame.i; i < frame.N; i++)
         {
-            if (i < frame.N)
-            {
                 m_Particles[i].remainingLifetime = 1;
                 Debug.Log("Received new particle at " + frame.Positions(i).Value.X);
                 m_Particles[i].position = new Vector3(frame.Positions(i).Value.X, frame.Positions(i).Value.W, frame.Positions(i).Value.Y);
-            }
-            else if (i < last_N)
-            {
-                m_Particles[i].remainingLifetime = 0;
-            }
         }
 
         // Apply the particle changes to the Particle System
@@ -54,12 +45,14 @@ public class LJParticles : MonoBehaviour
             m_Particles = new ParticleSystem.Particle[m_System.main.maxParticles];
 
         int max = m_System.main.maxParticles;
+        N = max;
         m_System.GetParticles(m_Particles, max);
 
         for (int i = 0; i < N; i++)
         {
             m_Particles[i].startSize = m_System.main.startSize.constant;
             m_Particles[i].startColor = m_System.main.startColor.color;
+            m_Particles[i].remainingLifetime = 0;
         }
 
         // Apply the particle changes to the Particle System

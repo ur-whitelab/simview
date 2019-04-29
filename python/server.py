@@ -5,7 +5,7 @@ import sys
 
 context = zmq.Context()
 sock = context.socket(zmq.PUB)
-sock.bind('tcp://*:5000')
+sock.bind('tcp://*:8889')
 N = 20
 print('Starting Loop')
 while True:
@@ -16,11 +16,12 @@ while True:
     positions = builder.EndVector(N)
     frame.FrameStart(builder)
     frame.FrameAddN(builder, N)
+    frame.FrameAddI(builder, 109)
     frame.FrameAddPositions(builder, positions)
     builder.Finish(frame.FrameEnd(builder))
 
     buffer = builder.Output()
-    sock.send(buffer)
-    print('.{}.'.format(len(buffer)), end='', sep='')	
-    time.sleep(1)    
+    sock.send_multipart(['frame-update'.encode(), buffer])
+    print('.{}.'.format(len(buffer)), end='', sep='')
+    time.sleep(1)
     sys.stdout.flush()
