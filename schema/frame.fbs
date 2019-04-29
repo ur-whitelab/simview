@@ -9,8 +9,8 @@ struct Scalar4 {
 
 table Frame {
   N: int;
-  i: int;
-  positions:[Scalar4];  
+  I: int;
+  positions:[Scalar4];
 }
 
 root_type Frame;
