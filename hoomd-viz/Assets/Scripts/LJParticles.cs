@@ -25,13 +25,12 @@ public class LJParticles : MonoBehaviour
         // GetParticles is allocation free because we reuse the m_Particles buffer between updates
         m_System.GetParticles(m_Particles, N);
 
-        Debug.Log("Frame goes from " + frame.I + " to " + (frame.N + frame.I));
+        // Debug.Log("Frame goes from " + frame.I + " to " + (frame.N + frame.I));
 
         for (int i = frame.I; i < frame.I + frame.N; i++)
         {
                 m_Particles[i].remainingLifetime = 10;
                 m_Particles[i].position = new Vector3(frame.Positions(i - frame.I).Value.X, frame.Positions(i - frame.I).Value.W, frame.Positions(i- frame.I).Value.Y);
-                Debug.Log("i: " + frame.Positions(i - frame.I).Value.X + " " + frame.Positions(i - frame.I).Value.Y + " " + frame.Positions(i - frame.I).Value.Z + " " + frame.Positions(i - frame.I).Value.W);
         }
 
 
@@ -45,21 +44,22 @@ public class LJParticles : MonoBehaviour
         if (m_System == null)
             m_System = GetComponent<ParticleSystem>();
 
-        if (m_Particles == null || m_Particles.Length < m_System.main.maxParticles)
+        if (m_Particles == null || m_Particles.Length < m_System.main.maxParticles) {
             m_Particles = new ParticleSystem.Particle[m_System.main.maxParticles];
 
-        int max = m_System.main.maxParticles;
-        N = max;
-        m_System.GetParticles(m_Particles, max);
+            int max = m_System.main.maxParticles;
+            N = max;
+            m_System.GetParticles(m_Particles, max);
 
-        for (int i = 0; i < N; i++)
-        {
-            m_Particles[i].startSize = m_System.main.startSize.constant;
-            m_Particles[i].startColor = m_System.main.startColor.color;
-            m_Particles[i].remainingLifetime = 0;
+            for (int i = 0; i < N; i++)
+            {
+                m_Particles[i].startSize = m_System.main.startSize.constant;
+                m_Particles[i].startColor = m_System.main.startColor.color;
+                m_Particles[i].remainingLifetime = 0;
+            }
+
+            // Apply the particle changes to the Particle System
+            m_System.SetParticles(m_Particles, max);
         }
-
-        // Apply the particle changes to the Particle System
-        m_System.SetParticles(m_Particles, max);
     }
 }
