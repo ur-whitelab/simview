@@ -25,12 +25,16 @@ public class LJParticles : MonoBehaviour
         // GetParticles is allocation free because we reuse the m_Particles buffer between updates
         m_System.GetParticles(m_Particles, N);
 
-        for (int i = frame.i; i < frame.N; i++)
+        Debug.Log("Frame goes from " + frame.I + " to " + (frame.N + frame.I));
+
+        for (int i = frame.I; i < frame.I + frame.N; i++)
         {
-                m_Particles[i].remainingLifetime = 1;
-                Debug.Log("Received new particle at " + frame.Positions(i).Value.X);
-                m_Particles[i].position = new Vector3(frame.Positions(i).Value.X, frame.Positions(i).Value.W, frame.Positions(i).Value.Y);
+                m_Particles[i].remainingLifetime = 10;
+                m_Particles[i].position = new Vector3(frame.Positions(i - frame.I).Value.X, frame.Positions(i - frame.I).Value.W, frame.Positions(i- frame.I).Value.Y);
+                Debug.Log("i: " + frame.Positions(i - frame.I).Value.X + " " + frame.Positions(i - frame.I).Value.Y + " " + frame.Positions(i - frame.I).Value.Z + " " + frame.Positions(i - frame.I).Value.W);
         }
+
+
 
         // Apply the particle changes to the Particle System
         m_System.SetParticles(m_Particles, N);

@@ -29,7 +29,7 @@ public class CommClient : MonoBehaviour
         FrameClient = new SubscriberSocket();
         FrameClient.Subscribe("frame-update");
         FrameClient.Connect(ServerUri);
-        Debug.Log("Socket connected");
+        Debug.Log("Socket connected on " + ServerUri);
         FramePoller = new NetMQPoller { FrameClient };
         FrameResponseTask = new TaskCompletionSource<byte[]>();
 
@@ -38,7 +38,6 @@ public class CommClient : MonoBehaviour
         // This code will probably die in mobile phones due to use of threading (?) and/or Asyncio
         FrameClient.ReceiveReady += (s, a) =>
         {
-            Debug.Log("Message received!");
             var msg = a.Socket.ReceiveMultipartBytes();
             while (!FrameResponseTask.TrySetResult(msg[1])) ;
         };
