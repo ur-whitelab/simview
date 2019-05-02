@@ -4,6 +4,7 @@ using UnityEngine;
 using FlatBuffers;
 using HZMsg;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -14,9 +15,16 @@ public class CommClient : MonoBehaviour
     public string ServerUri = "tcp://localhost:5000";
 
     public delegate void NewFrameAction(Frame frame);
+    public delegate void CompleteFrameAction();
+    public delegate void SimulationUpdateAction(Dictionary<string, string> state);
     public event NewFrameAction OnNewFrame;
-    private SubscriberSocket FrameClient;
-    private Frame.Frame lastMessage;
+    public event CompleteFrameAction OnCompleteFrame;
+    public event SimulationUpdateAction OnSimulationUpdate;
+    private PairSocket FrameClient;
+    private System.TimeSpan waitTime = new System.TimeSpan(0,0,5);
+
+    private string sendMsgStr = "{}";
+    private int updates = 0;
 
 
 
@@ -27,39 +35,66 @@ public class CommClient : MonoBehaviour
         FrameClient = new PairSocket();
         FrameClient.Connect(ServerUri);
         Debug.Log("Socket connected on " + ServerUri);
-        lastMessage = null;
 
+    }
+
+    public void SetMessage(Dictionary<string, string> msg) {
+        sendMsgStr = JsonConvert.SerializeObject(msg, Formatting.Indented);
     }
 
     // Update is called once per frame
     void Update()
     {
-        // treat last message if necessary
-        if (OnNewFrame != null && lastMessage != null)
-            OnNewFrame(lastMessage);
-
+        List<byte[]> msg = null;
+        bool received;
         while(true) {
-            Msg msg;
-            var received = a.Socket.TryReceiveMultipartBytes(1, msg);
+            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
             if(!received) {
                 // had timeout problem
-                lastMessage = null;
+                Application.Quit();
+                break;
+            }
+            // read string
+            string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
+            if(msgType == "frame-complete") {
+                updates += 1;
+                if(OnCompleteFrame != null)
+                    OnCompleteFrame();
                 break;
             }
             var buf = new ByteBuffer(msg[1]);
             var frame = Frame.GetRootAsFrame(buf);
-            if (lastMessage != null && frame.time != lastMessage.time) {
-                // new timestep
-                lastMessage = frame;
-                break;
-            }
             if (OnNewFrame != null)
                 OnNewFrame(frame);
+        }
+
+        if(updates % 10 == 0) {
+            // now get state update
+            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+            if(!received)
+                Application.Quit();
+            if(OnSimulationUpdate != null) {
+                string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
+                if(jsonString.Length > 0) {
+                    var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
+                    OnSimulationUpdate(values);
+                }
+            }
+            // now send state update
+            var sendMsg = new NetMQMessage();
+            sendMsg.Append("simulation-update");
+            sendMsg.Append(sendMsgStr);
+            received = FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
+            if(!received)
+                Application.Quit();
+            sendMsgStr = "{}";
+            updates = 0;
         }
     }
 
     void onDestroy()
     {
+        FrameClient.Close();
         FrameClient.Dispose();
     }
 }
