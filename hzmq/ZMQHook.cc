@@ -71,7 +71,7 @@ void ZMQHook::update(unsigned int timestep)  {
       for(unsigned int i = 0; i < N; i += m_N) {
         // our message will be either m_N or long enough to complete sending the positions
         // why doesn't std::min work here?
-        Ni = m_N < N - (i + m_N) ? m_N : N - (i + m_N);
+        Ni = m_N <= N - (i + m_N) ? m_N : N - i;
         frame->mutate_I(i);
         frame->mutate_N(Ni);
         frame->mutate_time(timestep);
@@ -97,21 +97,23 @@ void ZMQHook::update(unsigned int timestep)  {
 
       // now send simulation state
       // set up message
-      zmq::multipart_t multipart;
-      pybind11::object pystring = m_pyself.attr("get_state_msg")();
-      std::string s = pystring.cast<std::string>();
-      zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
-      multipart.addstr("state-update");
-      multipart.add(std::move(msg));
-      multipart.send(m_socket);
-
-      // now receive response
-      multipart.recv(m_socket);
-      // assume it's correct name
-      multipart.pop();
-      zmq::message_t reply = multipart.pop();
-      char* data = static_cast<char*>(reply.data());
-      m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
+      if( (timestep / m_period) % 10 == 0) {
+	zmq::multipart_t multipart;
+	pybind11::object pystring = m_pyself.attr("get_state_msg")();
+	std::string s = pystring.cast<std::string>();
+	zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
+	multipart.addstr("state-update");
+	multipart.add(std::move(msg));
+	multipart.send(m_socket);
+	
+	// now receive response
+	multipart.recv(m_socket);
+	// assume it's correct name
+	multipart.pop();
+	zmq::message_t reply = multipart.pop();
+	char* data = static_cast<char*>(reply.data());
+	m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
+      }
   }
 }
 
