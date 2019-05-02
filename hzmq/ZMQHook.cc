@@ -7,7 +7,7 @@
 #include <utility>
 
 ZMQHook::ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size) :
- m_context(1), m_socket(m_context, ZMQ_PUB),
+ m_context(1), m_socket(m_context, ZMQ_PAIR),
 m_pdata(sysdef->getParticleData()),
 m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(period), m_N(0) {
 
@@ -41,7 +41,7 @@ void ZMQHook::updateSize(unsigned int N) {
   auto fbb_positions = m_fbb->CreateVectorOfStructs(fbb_scalar4s, N);
   // why 1? Because if you use default, it assumes you don't want that position
   // so you cannot mutate it later
-  auto frame = HZMsg::CreateFrame(*m_fbb, N, 1, fbb_positions);
+  auto frame = HZMsg::CreateFrame(*m_fbb, N, 1, 1, fbb_positions);
   HZMsg::FinishFrameBuffer(*m_fbb, frame);
 
   // update our N
@@ -67,18 +67,21 @@ void ZMQHook::update(unsigned int timestep)  {
       //get mutable frame
       auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
       int Ni = 0;
+      int count = 0;
       for(unsigned int i = 0; i < N; i += m_N) {
         // our message will be either m_N or long enough to complete sending the positions
         // why doesn't std::min work here?
         Ni = m_N < N - (i + m_N) ? m_N : N - (i + m_N);
         frame->mutate_I(i);
         frame->mutate_N(Ni);
+        frame->mutate_time(timestep);
         //memcpy over the positions
         memcpy(frame->mutable_positions(), &positions_data.data[i], Ni * sizeof(Scalar4));
 
         // set up message
         zmq::multipart_t multipart;
-        // we will copy the framebuffer. Otherwise we can have repeated messages!
+        // we will copy the framebuffer (this ctor does it).
+        // Otherwise we can have repeated messages!
         zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize());
         // move to multipart
         multipart.push(std::move(msg));
@@ -87,7 +90,9 @@ void ZMQHook::update(unsigned int timestep)  {
         // send over wire
         // message should already refer to flatbuffer pointer
         multipart.send(m_socket);
+        count += 1;
       }
+      std::cout << "sent " << count << std::endl;
   }
 }
 

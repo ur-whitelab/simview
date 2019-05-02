@@ -20,25 +20,30 @@ public struct Frame : IFlatbufferObject
   public int N { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public bool MutateN(int N) { int o = __p.__offset(4); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, N); return true; } else { return false; } }
   public int I { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
-  public bool MutateI(int i) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, i); return true; } else { return false; } }
-  public Scalar4? Positions(int j) { int o = __p.__offset(8); return o != 0 ? (Scalar4?)(new Scalar4()).__assign(__p.__vector(o) + j * 16, __p.bb) : null; }
-  public int PositionsLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public bool MutateI(int I) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, I); return true; } else { return false; } }
+  public int Time { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public bool MutateTime(int time) { int o = __p.__offset(8); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, time); return true; } else { return false; } }
+  public Scalar4? Positions(int j) { int o = __p.__offset(10); return o != 0 ? (Scalar4?)(new Scalar4()).__assign(__p.__vector(o) + j * 16, __p.bb) : null; }
+  public int PositionsLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<Frame> CreateFrame(FlatBufferBuilder builder,
       int N = 0,
-      int i = 0,
+      int I = 0,
+      int time = 0,
       VectorOffset positionsOffset = default(VectorOffset)) {
-    builder.StartObject(3);
+    builder.StartObject(4);
     Frame.AddPositions(builder, positionsOffset);
-    Frame.AddI(builder, i);
+    Frame.AddTime(builder, time);
+    Frame.AddI(builder, I);
     Frame.AddN(builder, N);
     return Frame.EndFrame(builder);
   }
 
-  public static void StartFrame(FlatBufferBuilder builder) { builder.StartObject(3); }
+  public static void StartFrame(FlatBufferBuilder builder) { builder.StartObject(4); }
   public static void AddN(FlatBufferBuilder builder, int N) { builder.AddInt(0, N, 0); }
-  public static void AddI(FlatBufferBuilder builder, int i) { builder.AddInt(1, i, 0); }
-  public static void AddPositions(FlatBufferBuilder builder, VectorOffset positionsOffset) { builder.AddOffset(2, positionsOffset.Value, 0); }
+  public static void AddI(FlatBufferBuilder builder, int I) { builder.AddInt(1, I, 0); }
+  public static void AddTime(FlatBufferBuilder builder, int time) { builder.AddInt(2, time, 0); }
+  public static void AddPositions(FlatBufferBuilder builder, VectorOffset positionsOffset) { builder.AddOffset(3, positionsOffset.Value, 0); }
   public static void StartPositionsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(16, numElems, 4); }
   public static Offset<Frame> EndFrame(FlatBufferBuilder builder) {
     int o = builder.EndObject();

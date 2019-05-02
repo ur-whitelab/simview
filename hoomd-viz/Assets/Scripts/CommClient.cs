@@ -15,10 +15,8 @@ public class CommClient : MonoBehaviour
 
     public delegate void NewFrameAction(Frame frame);
     public event NewFrameAction OnNewFrame;
-
-    private TaskCompletionSource<byte[]> FrameResponseTask;
     private SubscriberSocket FrameClient;
-    private NetMQPoller FramePoller;
+    private Frame.Frame lastMessage;
 
 
 
@@ -26,68 +24,42 @@ public class CommClient : MonoBehaviour
     void Start()
     {
         // set-up sockets and poller
-        FrameClient = new SubscriberSocket();
-        FrameClient.Subscribe("frame-update");
+        FrameClient = new PairSocket();
         FrameClient.Connect(ServerUri);
         Debug.Log("Socket connected on " + ServerUri);
-        FramePoller = new NetMQPoller { FrameClient };
-        FrameResponseTask = new TaskCompletionSource<byte[]>();
+        lastMessage = null;
 
-
-        // create callback for when socket is ready
-        // This code will probably die in mobile phones due to use of threading (?) and/or Asyncio
-        FrameClient.ReceiveReady += (s, a) =>
-        {
-            var msg = a.Socket.ReceiveMultipartBytes();
-            while (!FrameResponseTask.TrySetResult(msg[1])) ;
-        };
-
-        FramePoller.RunAsync();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(FrameResponseTask.Task.IsCompleted)
-        {
-            // have new data
-            var buf = new ByteBuffer(FrameResponseTask.Task.Result);
+        // treat last message if necessary
+        if (OnNewFrame != null && lastMessage != null)
+            OnNewFrame(lastMessage);
+
+        while(true) {
+            Msg msg;
+            var received = a.Socket.TryReceiveMultipartBytes(1, msg);
+            if(!received) {
+                // had timeout problem
+                lastMessage = null;
+                break;
+            }
+            var buf = new ByteBuffer(msg[1]);
             var frame = Frame.GetRootAsFrame(buf);
+            if (lastMessage != null && frame.time != lastMessage.time) {
+                // new timestep
+                lastMessage = frame;
+                break;
+            }
             if (OnNewFrame != null)
                 OnNewFrame(frame);
-            FrameResponseTask = new TaskCompletionSource<byte[]>();
         }
     }
 
     void onDestroy()
     {
-        try
-        {
-            FramePoller.StopAsync();
-        }
-
-        catch
-        {
-            UnityEngine.Debug.Log("Tried to stopasync while the poller wasn't running! Oops.");
-        }
-        FramePoller.Dispose();
-        FrameClient.Close();
-        FrameClient.Dispose();
-    }
-
-    void OnApplicationQuit()//cleanup
-    {
-        try
-        {
-            FramePoller.StopAsync();
-        }
-
-        catch
-        {
-            UnityEngine.Debug.Log("Tried to stopasync while the poller wasn't running! Oops.");
-        }
-        FramePoller.Dispose();
-        FrameClient.Close();
         FrameClient.Dispose();
     }
 }

@@ -5,7 +5,7 @@ import sys
 
 context = zmq.Context()
 sock = context.socket(zmq.PUB)
-sock.bind('tcp://*:5001')
+sock.bind('tcp://*:5000')
 N = 100
 print('Starting Loop')
 j = 0

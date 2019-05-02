@@ -60,7 +60,8 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_N = 4,
     VT_I = 6,
-    VT_POSITIONS = 8
+    VT_TIME = 8,
+    VT_POSITIONS = 10
   };
   int32_t N() const {
     return GetField<int32_t>(VT_N, 0);
@@ -74,6 +75,12 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool mutate_I(int32_t _I) {
     return SetField<int32_t>(VT_I, _I, 0);
   }
+  int32_t time() const {
+    return GetField<int32_t>(VT_TIME, 0);
+  }
+  bool mutate_time(int32_t _time) {
+    return SetField<int32_t>(VT_TIME, _time, 0);
+  }
   const flatbuffers::Vector<const Scalar4 *> *positions() const {
     return GetPointer<const flatbuffers::Vector<const Scalar4 *> *>(VT_POSITIONS);
   }
@@ -84,6 +91,7 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_N) &&
            VerifyField<int32_t>(verifier, VT_I) &&
+           VerifyField<int32_t>(verifier, VT_TIME) &&
            VerifyOffset(verifier, VT_POSITIONS) &&
            verifier.VerifyVector(positions()) &&
            verifier.EndTable();
@@ -98,6 +106,9 @@ struct FrameBuilder {
   }
   void add_I(int32_t I) {
     fbb_.AddElement<int32_t>(Frame::VT_I, I, 0);
+  }
+  void add_time(int32_t time) {
+    fbb_.AddElement<int32_t>(Frame::VT_TIME, time, 0);
   }
   void add_positions(flatbuffers::Offset<flatbuffers::Vector<const Scalar4 *>> positions) {
     fbb_.AddOffset(Frame::VT_POSITIONS, positions);
@@ -118,9 +129,11 @@ inline flatbuffers::Offset<Frame> CreateFrame(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t N = 0,
     int32_t I = 0,
+    int32_t time = 0,
     flatbuffers::Offset<flatbuffers::Vector<const Scalar4 *>> positions = 0) {
   FrameBuilder builder_(_fbb);
   builder_.add_positions(positions);
+  builder_.add_time(time);
   builder_.add_I(I);
   builder_.add_N(N);
   return builder_.Finish();
@@ -130,12 +143,14 @@ inline flatbuffers::Offset<Frame> CreateFrameDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t N = 0,
     int32_t I = 0,
+    int32_t time = 0,
     const std::vector<Scalar4> *positions = nullptr) {
   auto positions__ = positions ? _fbb.CreateVectorOfStructs<Scalar4>(*positions) : 0;
   return HZMsg::CreateFrame(
       _fbb,
       N,
       I,
+      time,
       positions__);
 }
 
