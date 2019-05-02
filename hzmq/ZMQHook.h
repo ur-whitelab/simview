@@ -25,7 +25,8 @@
 class ZMQHook : public HalfStepHook {
 
 public:
-  ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size);
+  ZMQHook() = delete;
+  ZMQHook(pybind11::object& pyself, std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size);
 
   void update(unsigned int timestep) override;
   void setSystemDefinition(std::shared_ptr<SystemDefinition> sysdef);
@@ -34,6 +35,7 @@ private:
 
   void updateSize(unsigned int N);
 
+  pybind11::object m_pyself;
   zmq::context_t m_context;
   zmq::socket_t m_socket;
   zmq::message_t* m_message;

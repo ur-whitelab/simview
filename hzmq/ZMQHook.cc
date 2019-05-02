@@ -6,8 +6,8 @@
 #include <stdexcept>
 #include <utility>
 
-ZMQHook::ZMQHook(std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size) :
- m_context(1), m_socket(m_context, ZMQ_PAIR),
+ZMQHook::ZMQHook(pybind11::object& pyself, std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size) :
+ m_pyself(pyself), m_context(1), m_socket(m_context, ZMQ_PAIR),
 m_pdata(sysdef->getParticleData()),
 m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(period), m_N(0) {
 
@@ -84,15 +84,34 @@ void ZMQHook::update(unsigned int timestep)  {
         // Otherwise we can have repeated messages!
         zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize());
         // move to multipart
-        multipart.push(std::move(msg));
-        multipart.push(zmq::message_t("frame-update", 12));
+        multipart.addstr("frame-update");
+        multipart.add(std::move(msg));
 
         // send over wire
         // message should already refer to flatbuffer pointer
         multipart.send(m_socket);
         count += 1;
       }
-      std::cout << "sent " << count << std::endl;
+
+      m_socket.send(zmq::message_t("frame-complete", 14));
+
+      // now send simulation state
+      // set up message
+      zmq::multipart_t multipart;
+      pybind11::object pystring = m_pyself.attr("get_state_msg")();
+      std::string s = pystring.cast<std::string>();
+      zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
+      multipart.addstr("state-update");
+      multipart.add(std::move(msg));
+      multipart.send(m_socket);
+
+      // now receive response
+      multipart.recv(m_socket);
+      // assume it's correct name
+      multipart.pop();
+      zmq::message_t reply = multipart.pop();
+      char* data = static_cast<char*>(reply.data());
+      m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
   }
 }
 
@@ -104,7 +123,7 @@ void export_ZMQHook(pybind11::module& m)
       //need to export halfstephook, since it's not exported anywhere else
     pybind11::class_<HalfStepHook, std::shared_ptr<HalfStepHook> >(m, "HalfStepHook");
     pybind11::class_<ZMQHook, std::shared_ptr<ZMQHook >, HalfStepHook>(m, "ZMQHook")
-      .def(pybind11::init<std::shared_ptr<SystemDefinition>, unsigned int, const char*, unsigned int>())
+      .def(pybind11::init< pybind11::object&, std::shared_ptr<SystemDefinition>, unsigned int, const char*, unsigned int>())
     ;
     }
 
