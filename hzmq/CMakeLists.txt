@@ -101,7 +101,8 @@ endforeach()
 
 add_custom_target(copy_${COMPONENT_NAME} ALL DEPENDS ${files})
 
-if (BUILD_TESTING)
-    add_subdirectory(test-py)
-endif()
+# No build testing yet
+# if (BUILD_TESTING)
+#     add_subdirectory(test-py)
+# endif()
 
