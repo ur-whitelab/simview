@@ -3,6 +3,9 @@ import HZMsg.Scalar4 as scalar4
 import zmq, flatbuffers, time
 import sys
 
+'''This is an example server for sending the encoded flatbuffer info from an ongoing HOOMD-blue
+simulation. See client.py for how to parse it.'''
+
 context = zmq.Context()
 sock = context.socket(zmq.PUB)
 sock.bind('tcp://*:5000')

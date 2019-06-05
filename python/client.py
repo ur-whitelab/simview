@@ -1,6 +1,10 @@
 import zmq, time, json
 import HZMsg.Frame as frame
 
+'''This is an example client file for testing receiving encoded messages containing the 
+output from an ongoing HOOMD-blue simulation. See lj.py and server.py for how this is 
+constructed and encoded.'''
+
 context = zmq.Context()
 sock = context.socket(zmq.PAIR)
 #sock.setsockopt(zmq.SUBSCRIBE, b'')
