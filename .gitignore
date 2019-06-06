@@ -45,5 +45,7 @@ Images
 #VScode
 *.vscode
 
+.DS_Store
+
 #pycache files
 __pycache__/
