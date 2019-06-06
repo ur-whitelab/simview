@@ -291,7 +291,7 @@ GameObject:
 --- !u!199 &590181870
 ParticleSystemRenderer:
   serializedVersion: 6
-  m_ObjectHideFlags: 2
+  m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -373,7 +373,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 590181869}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d26ff99e6c2d95f44926069a409de08a, type: 3}
+  m_Script: {fileID: 11500000, guid: e27d4cd990efe496b94b7d5297489260, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!198 &590181873
@@ -5139,10 +5139,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 644285887}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 697c09c4f3a2084448c81505dfa81a2d, type: 3}
+  m_Script: {fileID: 11500000, guid: 230822ceee69e4b33a4a3613c7db61fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ServerUri: tcp://127.0.0.1:5000
+  ServerUri: tcp://localhost:5000
 --- !u!4 &644285889
 Transform:
   m_ObjectHideFlags: 0
@@ -5347,7 +5347,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1815320151}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aab25ddd15e07b345bb06220458ce7b5, type: 3}
+  m_Script: {fileID: 11500000, guid: 6effb08cb0b4c43c6bac257a86317694, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   TemperatureText: {fileID: 942117692}

@@ -24,6 +24,7 @@ ExportedObj/
 .vs/*
 
 # Unity3D generated meta files
+*.pdb.meta
 *.pidb.meta
 
 # Unity3D Generated File On Crash Reports
@@ -31,9 +32,6 @@ sysinfo.txt
 
 # Unity EXE files
 exe/
-
-#Unity meta files
-*.meta
 
 #Unity project settings
 ProjectSettings/**
