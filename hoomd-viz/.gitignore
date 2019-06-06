@@ -34,7 +34,7 @@ sysinfo.txt
 exe/
 
 #Unity project settings
-ProjectSettings/**
+#ProjectSettings/**
 
 #visual studio project files
 .vs/**
