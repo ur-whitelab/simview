@@ -21,36 +21,44 @@ public class SimInterface : MonoBehaviour
     {
         cc = GameObject.Find("CommClient").GetComponent<CommClient>();
         cc.OnSimulationUpdate += updateInterface;
+        // updateInterface();
     }
 
-    private void updateInterface(Dictionary<string, string> data) {
-        if(data.ContainsKey("temperature")) {
+    private void updateInterface(Dictionary<string, string> data)
+    {
+        if (data.ContainsKey("temperature"))
+        {
             var text = TemperatureText.GetComponent<Text>();
-            text.text = "Temperature: " +  Math.Round(float.Parse(data["temperature"]), 3) + "(" + Math.Round(setTemperature, 2)  + ")";
-        } else {
+            text.text = "Temperature: " + Math.Round(float.Parse(data["temperature"]), 3) + "(" + Math.Round(setTemperature, 2) + ")";
+        }
+        else
+        {
             var text = TemperatureText.GetComponent<Text>();
-            text.text = "Temperature: " + "(" + Math.Round(setTemperature, 2)  + ")";
+            text.text = "Temperature: " + "(" + Math.Round(setTemperature, 2) + ")";
         }
 
-        if(data.ContainsKey("density")) {
+        if (data.ContainsKey("density"))
+        {
             var text = DensityText.GetComponent<Text>();
-            text.text = "Density: " +  Math.Round(float.Parse(data["density"]), 5);
+            text.text = "Density: " + Math.Round(float.Parse(data["density"]), 5);
         }
 
-        if(data.ContainsKey("pressure")) {
+        if (data.ContainsKey("pressure"))
+        {
             var text = PressureText.GetComponent<Text>();
-            text.text = "Pressure: " +  Math.Round(float.Parse(data["pressure"]), 3);
+            text.text = "Pressure: " + Math.Round(float.Parse(data["pressure"]), 3);
         }
 
         // now set data
-        var newdata =new Dictionary<string, string>();
+        var newdata = new Dictionary<string, string>();
         newdata["temperature"] = "" + setTemperature;
         newdata["box"] = "" + scale;
         scale = 1f;
         cc.SetMessage(newdata);
     }
 
-    void Update() {
+    void Update()
+    {
         if (Input.GetKeyDown(KeyCode.KeypadPlus))
         {
             setTemperature += 0.01f;

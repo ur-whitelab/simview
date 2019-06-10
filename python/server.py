@@ -3,15 +3,17 @@ import HZMsg.Scalar4 as scalar4
 import zmq, flatbuffers, time
 import sys
 
+
 '''This is an example server for sending the encoded flatbuffer info from an ongoing HOOMD-blue
 simulation. See client.py for how to parse it.'''
 
 context = zmq.Context()
-sock = context.socket(zmq.PUB)
-sock.bind('tcp://*:5000')
+sock = context.socket(zmq.PAIR)
+sock.bind('tcp://*:5556')
 N = 100
 print('Starting Loop')
 j = 0
+updates = 0
 while True:
     builder = flatbuffers.Builder(0)
     frame.FrameStartPositionsVector(builder, N)
@@ -26,9 +28,12 @@ while True:
 
     buffer = builder.Output()
     sock.send_multipart(['frame-update'.encode(), buffer])
-    print('.{}.'.format(len(buffer)), end='', sep='')
-    time.sleep(1)
+
+    #print('.{}.'.format(len(buffer)), end='', sep='')
+    print('.{}.'.format(len(buffer)))
+    time.sleep(0.01)
     sys.stdout.flush()
 
     j += N
     j %= 10000
+

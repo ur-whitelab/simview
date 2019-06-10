@@ -45,6 +45,7 @@ Images
 #VScode
 *.vscode
 
+#macOS autogen
 .DS_Store
 
 #pycache files

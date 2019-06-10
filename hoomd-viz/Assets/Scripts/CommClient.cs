@@ -12,7 +12,12 @@ public class CommClient : MonoBehaviour
 {
 
     [Tooltip("Follows ZeroMQ syntax")]
-    public string ServerUri = "tcp://localhost:5000";
+
+    [SerializeField]
+    private string ServerUri = "tcp://localhost:5556";
+
+    [SerializeField]
+    private string Server_Macbook_UR_RC_GUEST = "tcp://10.2.6.42:5556";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -21,12 +26,10 @@ public class CommClient : MonoBehaviour
     public event CompleteFrameAction OnCompleteFrame;
     public event SimulationUpdateAction OnSimulationUpdate;
     private PairSocket FrameClient;
-    private System.TimeSpan waitTime = new System.TimeSpan(0,0,5);
+    //private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 5);
 
     private string sendMsgStr = "{}";
     private int updates = 0;
-
-
 
     // Start is called before the first frame update
     void Start()
@@ -38,7 +41,8 @@ public class CommClient : MonoBehaviour
 
     }
 
-    public void SetMessage(Dictionary<string, string> msg) {
+    public void SetMessage(Dictionary<string, string> msg)
+    {
         sendMsgStr = JsonConvert.SerializeObject(msg, Formatting.Indented);
     }
 
@@ -46,19 +50,29 @@ public class CommClient : MonoBehaviour
     void Update()
     {
         List<byte[]> msg = null;
-        bool received;
-        while(true) {
-            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-            if(!received) {
-                // had timeout problem
-                Application.Quit();
+        // bool received;
+        while (true)
+        {
+            FrameClient.ReceiveMultipartBytes(ref msg, 2);
+            if (msg == null)
+            {
+                //Application.Quit();
                 break;
             }
+            //received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+            //if (!received)
+            //{
+            //    // had timeout problem
+            //    Application.Quit();
+            //    break;
+            //}
+
             // read string
             string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
-            if(msgType == "frame-complete") {
+            if (msgType == "frame-complete")
+            {
                 updates += 1;
-                if(OnCompleteFrame != null)
+                if (OnCompleteFrame != null)
                     OnCompleteFrame();
                 break;
             }
@@ -68,15 +82,26 @@ public class CommClient : MonoBehaviour
                 OnNewFrame(frame);
         }
 
-        if(updates % 10 == 0) {
+        if (updates % 10 == 0)
+        {
             // now get state update
-            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-            if(!received)
-                Application.Quit();
-            if(OnSimulationUpdate != null) {
+            //received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+            //if (!received)
+            //Application.Quit();
+            FrameClient.ReceiveMultipartBytes(ref msg, 2);
+            if (msg != null)
+            {
+                string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
+                Debug.Log("msg type:" + msgType);
+            }
+
+            if (OnSimulationUpdate != null)
+            {
                 string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
-                if(jsonString.Length > 0) {
+                if (jsonString.Length > 0)
+                {
                     var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
+                    //Debug.Log("values[temp]: " + values["temperature"]);
                     OnSimulationUpdate(values);
                 }
             }
@@ -84,9 +109,10 @@ public class CommClient : MonoBehaviour
             var sendMsg = new NetMQMessage();
             sendMsg.Append("simulation-update");
             sendMsg.Append(sendMsgStr);
-            received = FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
-            if(!received)
-                Application.Quit();
+            //received = FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
+            //if (!received)
+            //Application.Quit();
+            FrameClient.SendMultipartMessage(sendMsg);
             sendMsgStr = "{}";
             updates = 0;
         }
