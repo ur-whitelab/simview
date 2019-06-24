@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/_Scenes/VR_Mol.unity
+    guid: 7bae03c5942894edb89f342473b17029
   m_configObjects: {}

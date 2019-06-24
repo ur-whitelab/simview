@@ -7,9 +7,9 @@ using UnityEngine.UI;
 public class SimInterface : MonoBehaviour
 {
 
-    public GameObject TemperatureText;
-    public GameObject DensityText;
-    public GameObject PressureText;
+    public Text TemperatureText;
+    public Text DensityText;
+    public Text PressureText;
 
     private float setTemperature = 0.15f;
     private float scale = 1f;
@@ -21,32 +21,28 @@ public class SimInterface : MonoBehaviour
     {
         cc = GameObject.Find("CommClient").GetComponent<CommClient>();
         cc.OnSimulationUpdate += updateInterface;
-        // updateInterface();
     }
 
+    //[temp, dens, press]
     private void updateInterface(Dictionary<string, string> data)
     {
         if (data.ContainsKey("temperature"))
         {
-            var text = TemperatureText.GetComponent<Text>();
-            text.text = "Temperature: " + Math.Round(float.Parse(data["temperature"]), 3) + "(" + Math.Round(setTemperature, 2) + ")";
+            TemperatureText.text = "Temperature: " + Math.Round(float.Parse(data["temperature"]), 3) + "(" + Math.Round(setTemperature, 2) + ")";
         }
         else
         {
-            var text = TemperatureText.GetComponent<Text>();
-            text.text = "Temperature: " + "(" + Math.Round(setTemperature, 2) + ")";
+            TemperatureText.text = "Temperature: " + "(" + Math.Round(setTemperature, 2) + ")";
         }
 
         if (data.ContainsKey("density"))
         {
-            var text = DensityText.GetComponent<Text>();
-            text.text = "Density: " + Math.Round(float.Parse(data["density"]), 5);
+            DensityText.text = "Density: " + Math.Round(float.Parse(data["density"]), 5);
         }
 
         if (data.ContainsKey("pressure"))
         {
-            var text = PressureText.GetComponent<Text>();
-            text.text = "Pressure: " + Math.Round(float.Parse(data["pressure"]), 3);
+            PressureText.text = "Pressure: " + Math.Round(float.Parse(data["pressure"]), 3);
         }
 
         // now set data
