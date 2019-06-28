@@ -8,7 +8,7 @@ constructed and encoded.'''
 context = zmq.Context()
 sock = context.socket(zmq.PAIR)
 #sock.setsockopt(zmq.SUBSCRIBE, b'')
-sock.connect('tcp://localhost:5000')
+sock.connect('tcp://localhost:5556')
 
 count = 0
 while True:

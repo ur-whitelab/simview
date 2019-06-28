@@ -37,6 +37,12 @@ public class SceneManager : MonoBehaviour
         {
             //prevTouchPos = Vector2.zero;
             onTouchPad = false;
+        } else if (gvrController.GetButtonDown(GvrControllerButton.Trigger))
+        {
+            molSystem.incrementScaleF(0.01f);
+        } else if (gvrController.GetButtonDown(GvrControllerButton.Trigger))
+        {
+            molSystem.incrementScaleF(-0.01f);
         }
 
         if (onTouchPad)
@@ -47,6 +53,12 @@ public class SceneManager : MonoBehaviour
             molSystem.SetPosOffset(new Vector3(deltaTouchPos.x, 0, deltaTouchPos.y));
 
             prevTouchPos = touchPos;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            molSystem.incrementScaleF(-0.01f);
+
         }
 
     }

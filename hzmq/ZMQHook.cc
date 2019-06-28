@@ -63,7 +63,6 @@ void ZMQHook::update(unsigned int timestep)  {
       ArrayHandle<Scalar4> positions_data(positions, access_location::host,
                            access_mode::read);
       size_t N = positions.getNumElements();
-
       //get mutable frame
       auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
       int Ni = 0;
@@ -98,21 +97,23 @@ void ZMQHook::update(unsigned int timestep)  {
       // now send simulation state
       // set up message
       if( (timestep / m_period) % 10 == 0) {
-	zmq::multipart_t multipart;
-	pybind11::object pystring = m_pyself.attr("get_state_msg")();
-	std::string s = pystring.cast<std::string>();
-	zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
-	multipart.addstr("state-update");
-	multipart.add(std::move(msg));
-	multipart.send(m_socket);
+        
+	      zmq::multipart_t multipart;
+	      pybind11::object pystring = m_pyself.attr("get_state_msg")();
+	      std::string s = pystring.cast<std::string>();
+	      zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
+	      multipart.addstr("state-update");
+	      multipart.add(std::move(msg));
+	      multipart.send(m_socket);
 	
-	// now receive response
-	multipart.recv(m_socket);
-	// assume it's correct name
-	multipart.pop();
-	zmq::message_t reply = multipart.pop();
-	char* data = static_cast<char*>(reply.data());
-	m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
+	      // now receive response
+	      multipart.recv(m_socket);
+	      // assume it's correct name
+	      multipart.pop();
+	      zmq::message_t reply = multipart.pop();
+	      char* data = static_cast<char*>(reply.data());
+	      m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
+
       }
   }
 }

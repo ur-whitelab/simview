@@ -18,7 +18,7 @@ public class CommClient : MonoBehaviour
     private string ServerUri = "tcp://localhost:5556";
 
     [SerializeField]
-    private string Server_Macbook_UR_RC_GUEST = "tcp://10.2.21.215:5556";
+    private string Server_Macbook_UR_RC_GUEST = "tcp://192.168.1.168:5556";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -26,26 +26,39 @@ public class CommClient : MonoBehaviour
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
     public event SimulationUpdateAction OnSimulationUpdate;
-    private PairSocket FrameClient;
+  //  private PairSocket FrameClient;
+    private DealerSocket FrameClient;    
+
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
 
     private string sendMsgStr = "{}";
     private int updates = 0;
 
     int wait_for_hoomd_count = 30;
- //   bool waiting_for_hoomd;
+
+    string client_id = "1";
 
     // Start is called before the first frame update
     void Start()
     {
 
-        //NetMQ.
+#if UNITY_ANDROID
+
+        client_id = SystemInfo.deviceUniqueIdentifier;
+#endif
+
+        Debug.Log("client id: " + client_id);
+
         ForceDotNet.Force();
         // set-up sockets and poller
-        FrameClient = new PairSocket();
-      //  FrameClient.
+        //FrameClient = new PairSocket();
+        FrameClient = new DealerSocket();
+        FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);
         FrameClient.Connect(Server_Macbook_UR_RC_GUEST);
         Debug.Log("Socket connected on " + Server_Macbook_UR_RC_GUEST);
+
+        //tell broker id of this client
+        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("first-msg"));
 
     }
 
@@ -58,10 +71,11 @@ public class CommClient : MonoBehaviour
     void Update()
     {
         List<byte[]> msg = null;
-      //  bool received;
+
+        //  bool received;
         while (true)
         {
-            FrameClient.ReceiveMultipartBytes(ref msg, 2);
+           FrameClient.ReceiveMultipartBytes(ref msg, 2);
 
             if (msg == null)
             {
@@ -69,13 +83,9 @@ public class CommClient : MonoBehaviour
                 break;
             }
 
-            //received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-            //if (!received)
-            //    break;
 
             // read string
             string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
-            //Debug.Log("mt: " + msgType + " frame count: " + Time.frameCount);
             if (msgType == "frame-complete")
             {
                 updates += 1;
@@ -83,7 +93,7 @@ public class CommClient : MonoBehaviour
                     OnCompleteFrame();
                 break;
             }
-            
+
             var buf = new ByteBuffer(msg[1]);
             var frame = Frame.GetRootAsFrame(buf);
             if (OnNewFrame != null)
@@ -92,12 +102,11 @@ public class CommClient : MonoBehaviour
 
         if (updates % 10 == 0)
         {
-            // now get state update
-            //received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-            //  Debug.Log("got state update " + Time.frameCount);
-
+            Debug.Log("before % 10");
             FrameClient.ReceiveMultipartBytes(ref msg, 2);
 
+            Debug.Log("msgtype: " + System.Text.Encoding.UTF8.GetString(msg[0]));
+            Debug.Log("after % 10");
             if (OnSimulationUpdate != null)
             {
                 string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
@@ -114,13 +123,11 @@ public class CommClient : MonoBehaviour
             sendMsg.Append("simulation-update");
             sendMsg.Append(sendMsgStr);
             FrameClient.SendMultipartMessage(sendMsg);
-            //FrameClient.SendMultipartMessage(sendMsg);
 
             sendMsgStr = "{}";
             updates = 0;
 
         }
-
     }
 
 

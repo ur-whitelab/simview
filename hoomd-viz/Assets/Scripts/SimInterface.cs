@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class SimInterface : MonoBehaviour
 {
@@ -12,14 +13,14 @@ public class SimInterface : MonoBehaviour
     public Text PressureText;
 
     private float setTemperature = 0.15f;
-    private float scale = 1f;
+    private float scale = 1.0f;
 
-    private CommClient cc;
+    private vrCommClient cc;
 
     // Start is called before the first frame update
     void Start()
     {
-        cc = GameObject.Find("CommClient").GetComponent<CommClient>();
+        cc = GameObject.Find("CommClient").GetComponent<vrCommClient>();
         cc.OnSimulationUpdate += updateInterface;
     }
 
@@ -37,9 +38,8 @@ public class SimInterface : MonoBehaviour
 
         if (data.ContainsKey("density"))
         {
-            DensityText.text = "Density: " + Math.Round(float.Parse(data["density"]), 5);
+            DensityText.text = "Density: " + Math.Round(float.Parse(data["density"]), 3);
         }
-
         if (data.ContainsKey("pressure"))
         {
             PressureText.text = "Pressure: " + Math.Round(float.Parse(data["pressure"]), 3);
@@ -55,11 +55,11 @@ public class SimInterface : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        if (Input.GetKeyDown(KeyCode.T))
         {
             setTemperature += 0.01f;
         }
-        else if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        if (Input.GetKeyDown(KeyCode.G))
         {
             setTemperature -= 0.01f;
         }
@@ -67,9 +67,11 @@ public class SimInterface : MonoBehaviour
         {
             scale = 1.05f;
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             scale = 0.92f;
         }
     }
+
+
 }
