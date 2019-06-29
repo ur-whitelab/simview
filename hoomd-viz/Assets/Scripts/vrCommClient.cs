@@ -15,7 +15,7 @@ public class vrCommClient : MonoBehaviour
     [Tooltip("Follows ZeroMQ syntax")]
 
     //public string ServerUri = "tcp://localhost:5556";
-    public string Server_Macbook_UR_RC_GUEST = "tcp://10.2.25.68:5556";
+    public string Server_Macbook_UR_RC_GUEST = "tcp://10.5.6.218:5556";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -99,7 +99,8 @@ public class vrCommClient : MonoBehaviour
                     if (jsonString.Length > 0)
                     {
                         var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
-                        //Debug.Log("values[temp]: " + values["temperature"]);
+                        Debug.Log("values[temp]: " + values["temperature"]);
+                        Debug.Log("values[dens]: " + values["density"]);
                         OnSimulationUpdate(values);
                     }
                 }
@@ -119,8 +120,6 @@ public class vrCommClient : MonoBehaviour
 
     void OnDestroy()
     {
-        //     poll.Stop();
-
         FrameClient.Close();
         FrameClient.Dispose();
     }

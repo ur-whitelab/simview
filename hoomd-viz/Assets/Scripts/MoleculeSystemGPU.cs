@@ -14,9 +14,10 @@ public class MoleculeSystemGPU : MonoBehaviour
     private vrCommClient cc;
 
     private Transform[] moleculeTransforms;
-    private Vector3[] startPositions;
+    private Vector3[] frameUpdatePositions;
+    private bool[] activeMolecules;
 
-    private int num_molecules = 4000;
+    private int max_num_molecules = 4000;
     private float init_radius = 50f;
     private float bond_length = 0.075f;
 
@@ -26,61 +27,54 @@ public class MoleculeSystemGPU : MonoBehaviour
     [SerializeField]
     private float scaleF = 0.1f;
 
-    bool firstFrame = true;
-
     // Start is called before the first frame update
     void Start()
     {
-        cc.OnNewFrame += molProcessFrameUpdate;
-        //cc.OnCompleteFrame += molEndFrameUpdate;
+        cc.OnNewFrame += MolSysProcessFrameUpdate;
+        cc.OnCompleteFrame += MolSysEndFrameUpdate;
 
         posOffset = new Vector3(0, 2.2f, 3.14f);
-        moleculeTransforms = new Transform[num_molecules];
-        startPositions = new Vector3[num_molecules];
+
+        moleculeTransforms = new Transform[max_num_molecules];
+        frameUpdatePositions = new Vector3[max_num_molecules];
+        activeMolecules = new bool[max_num_molecules];
 
         InitSystem();
-
     }
 
-    //private void Update()
-    //{
-
-    //    for (int i = 0; i < num_molecules; i++)
-    //    {
-    //        moleculeTransforms[i].position = Random.insideUnitSphere * init_radius * 0.1f + posOffset;
-    //        //atomTransforms[i].position = Random.insideUnitSphere * radius * 0.1f + offset;
-    //        // atomTransforms[i].GetComponent<MeshRenderer>().enabled = true;
-    //    }
-
-    //}
-
-    private void molProcessFrameUpdate(Frame frame)
+    private void MolSysProcessFrameUpdate(Frame frame)
     {
-        
         for (int i = frame.I; i < frame.I + frame.N; i++)
         {
-            if (scaleF < 0.07f)
+            frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X * scaleF,
+                                                  frame.Positions(i - frame.I).Value.W * scaleF,
+                                                  frame.Positions(i - frame.I).Value.Y * scaleF) + posOffset;
+            activeMolecules[i] = true;
+        }
+    }
+
+    private void MolSysEndFrameUpdate()
+    {
+        //update graphics
+        for (int i = 0; i < max_num_molecules; i++)
+        {
+            moleculeTransforms[i].position = frameUpdatePositions[i];
+
+            if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
             {
-                if (i % 2 == 0)
-                {
-                    if (!moleculeTransforms[i].gameObject.activeInHierarchy) { moleculeTransforms[i].gameObject.SetActive(true); }
-                    moleculeTransforms[i].position = new Vector3(frame.Positions(i - frame.I).Value.X * scaleF, frame.Positions(i - frame.I).Value.W * scaleF, frame.Positions(i - frame.I).Value.Y * scaleF) + posOffset;
-                } else
-                {
-                    moleculeTransforms[i].gameObject.SetActive(false);
-                }
+                moleculeTransforms[i].gameObject.SetActive(false);
             } else
             {
-                if (!moleculeTransforms[i].gameObject.activeInHierarchy) { moleculeTransforms[i].gameObject.SetActive(true); }
-                moleculeTransforms[i].position = new Vector3(frame.Positions(i - frame.I).Value.X * scaleF, frame.Positions(i - frame.I).Value.W * scaleF, frame.Positions(i - frame.I).Value.Y * scaleF) + posOffset;
+                moleculeTransforms[i].gameObject.SetActive(true);
             }
         }
+        activeMolecules = new bool[max_num_molecules]; //reset active mol array.
     }
 
     private void InitSystem()
     {
         MaterialPropertyBlock properties = new MaterialPropertyBlock();
-        for (int i = 0; i < num_molecules; i++)//just hardcoding in CO for now.
+        for (int i = 0; i < max_num_molecules; i++)
         {
 
             moleculeTransforms[i] = Instantiate(atomPrefab);
