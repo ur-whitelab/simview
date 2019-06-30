@@ -15,7 +15,7 @@ public class vrCommClient : MonoBehaviour
     [Tooltip("Follows ZeroMQ syntax")]
 
     //public string ServerUri = "tcp://localhost:5556";
-    public string Server_Macbook_UR_RC_GUEST = "tcp://10.5.6.218:5556";
+    public string Server_Macbook_UR_RC_GUEST = "tcp://192.168.1.168:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -23,23 +23,19 @@ public class vrCommClient : MonoBehaviour
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
     public event SimulationUpdateAction OnSimulationUpdate;
-    //  private PairSocket FrameClient;
-    private DealerSocket FrameClient;
-    //  private NetMQPoller poll;
-
-
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
 
+    private SubscriberSocket SubClient;
+    private DealerSocket FrameClient;
+
     private string sendMsgStr = "{}";
-    private int updates = 0;
 
-    int wait_for_hoomd_count = 30;
-
-    string client_id = "1";
+    string client_id = "0";
 
     // Start is called before the first frame update
     void Start()
     {
+
 #if UNITY_ANDROID
 
         client_id = SystemInfo.deviceUniqueIdentifier;
@@ -48,14 +44,21 @@ public class vrCommClient : MonoBehaviour
         Debug.Log("client id: " + client_id);
 
         ForceDotNet.Force();
-        // set-up sockets and poller
-        //FrameClient = new PairSocket();
+
+        // set-up sockets
+        string upstream_port_address = Server_Macbook_UR_RC_GUEST + "5556";
+        string downstream_port_address = Server_Macbook_UR_RC_GUEST + "5559";
+
         FrameClient = new DealerSocket();
         FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);
-        FrameClient.Connect(Server_Macbook_UR_RC_GUEST);
-        Debug.Log("Socket connected on " + Server_Macbook_UR_RC_GUEST);
+        FrameClient.Connect(upstream_port_address);
+        Debug.Log("Dealer Socket connected on " + upstream_port_address);
         FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("first-msg"));
 
+        SubClient = new SubscriberSocket();
+        SubClient.Connect(downstream_port_address);
+        SubClient.SubscribeToAnyTopic();
+        Debug.Log("Subscriber Socket connected on " + downstream_port_address);
     }
 
     public void SetMessage(Dictionary<string, string> msg)
@@ -68,11 +71,10 @@ public class vrCommClient : MonoBehaviour
     {
         List<byte[]> msg = null;
 
-        FrameClient.ReceiveMultipartBytes(ref msg, 2);
+        bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
 
-        if (msg == null)
+        if (msg == null || !received)
         {
-            Debug.Log("returning update becuase msg is null");
             return;
         }
 
@@ -81,26 +83,29 @@ public class vrCommClient : MonoBehaviour
         switch (msgType)
         {
             case ("frame-update"):
+
                 var buf = new ByteBuffer(msg[1]);
                 var frame = Frame.GetRootAsFrame(buf);
                 if (OnNewFrame != null)
                     OnNewFrame(frame);
-
                 break;
+
             case ("frame-complete"):
+
                 if (OnCompleteFrame != null)
                     OnCompleteFrame();
-
                 break;
+
             case ("state-update"):
+
                 if (OnSimulationUpdate != null)
                 {
                     string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
                     if (jsonString.Length > 0)
                     {
                         var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
-                        Debug.Log("values[temp]: " + values["temperature"]);
-                        Debug.Log("values[dens]: " + values["density"]);
+                        //Debug.Log("values[temp]: " + values["temperature"]);
+                        //Debug.Log("values[dens]: " + values["density"]);
                         OnSimulationUpdate(values);
                     }
                 }
@@ -111,17 +116,40 @@ public class vrCommClient : MonoBehaviour
                 FrameClient.SendMultipartMessage(sendMsg);
 
                 sendMsgStr = "{}";
-                updates = 0;
 
+                break;
+
+            default:
+                Debug.Log("Unexpected msg type: " + msgType);
                 break;
         }
     }
 
+//#if UNITY_ANDROID
 
-    void OnDestroy()
+//    private void OnApplicationPause(bool pause)
+//    {
+//        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+
+//        FrameClient.Close();
+//        FrameClient.Dispose();
+
+//        SubClient.Close();
+//        SubClient.Dispose();
+//    }
+
+//#endif
+
+
+    private void OnApplicationQuit()
     {
+        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+
         FrameClient.Close();
         FrameClient.Dispose();
+
+        SubClient.Close();
+        SubClient.Dispose();
     }
 }
 

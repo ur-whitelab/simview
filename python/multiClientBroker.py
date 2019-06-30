@@ -2,12 +2,17 @@ import zmq
 import sys
 import time
 from random import randint, random
+import atexit
 
 context = zmq.Context()
-frontend = context.socket(zmq.ROUTER)
+
+frontend = context.socket(zmq.ROUTER)#unity upstream
 frontend.bind('tcp://*:5556')
 
-backend = context.socket(zmq.PAIR)
+publisher = context.socket(zmq.PUB)#unity downstream
+publisher.bind('tcp://*:5559')
+
+backend = context.socket(zmq.PAIR)#hoomd
 backend.bind('tcp://*:5570')
 
 poller = zmq.Poller()
@@ -21,29 +26,21 @@ while True:
 
     if socks.get(frontend) == zmq.POLLIN:
         message = frontend.recv_multipart()
-        #ident, msg_body = message
-        #first element is client id, 2nd is message type.
-        if message[1] == 'first-msg':
-            client_ids.append(message[0])
-            print("first-msg available from " + str(message[0]))
+        client_id = message[0]
+        msg_type = message[1]
+        #First element is client id, 2nd is message type.
+        #The 'first-msg' and 'last-msg' if blocks are not strictly necessary but they provide useful debug info.
+        if msg_type == 'first-msg':
+            client_ids.append(client_id)
+            print(str(client_id) + "is connected.")
             print(str(len(client_ids)) + " client(s) connected")
-        else:
-            #should only be a 3 part state update
-            backend.send_multipart([message[1],message[2]])
+        elif msg_type == 'last-msg':
+            client_ids.remove(client_id)
+            print(str(client_id) + " is disconnected.")
+            print(str(len(client_ids)) + " client(s) connected")
+        elif msg_type == 'simulation-update':
+            backend.send_multipart([msg_type, message[2]])    
 
     if socks.get(backend) == zmq.POLLIN:
-        msg_body = backend.recv_multipart()
-        for _id in client_ids:
-            fMsg = []
-            #print("msg body: " + str(msg_body[0]))
-            if (msg_body[0] == "frame-update"):
-                fMsg = [_id, msg_body[0],msg_body[1]]
-            elif (msg_body[0] == "frame-complete"):
-                fMsg = [_id, msg_body[0]]
-            else:
-                fMsg = [_id, msg_body[0],msg_body[1]]
-            frontend.send_multipart(fMsg)
-
-frontend.close()
-backend.close()
-context.term()
+        message = backend.recv_multipart()
+        publisher.send_multipart(message)

@@ -507,7 +507,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Server_Macbook_UR_RC_GUEST: tcp://10.5.6.218:5556
+  Server_Macbook_UR_RC_GUEST: 'tcp://192.168.1.168:'
 --- !u!4 &764097287
 Transform:
   m_ObjectHideFlags: 0

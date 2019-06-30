@@ -27,6 +27,9 @@ def set_callback(**data):
     if 'temperature' in data:
         print('temperature', data['temperature'])
         nvt.set_params(kT = max(0.001,float(data['temperature'])))
+    if 'density' in data:
+        print('density', data['density'])
+        nvt.set_params()
     if 'box' in data:
         scale = float(data['box'])
         print('Resizing to', scale * log.query('lx') , ' x ', scale * log.query('lz'))

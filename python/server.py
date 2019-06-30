@@ -9,7 +9,7 @@ simulation. See client.py for how to parse it.'''
 
 context = zmq.Context()
 sock = context.socket(zmq.PAIR)
-sock.bind('tcp://*:5556')
+sock.bind('tcp://*:5559')
 N = 100
 print('Starting Loop')
 j = 0

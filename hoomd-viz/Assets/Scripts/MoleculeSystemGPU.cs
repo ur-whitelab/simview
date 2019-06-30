@@ -115,8 +115,7 @@ public class MoleculeSystemGPU : MonoBehaviour
                     }
                 }
             }
-
-            // molParent.SetActive(false);
+            moleculeTransforms[i].gameObject.SetActive(false);
 
         }
     }
