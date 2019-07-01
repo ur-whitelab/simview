@@ -15,7 +15,9 @@ public class vrCommClient : MonoBehaviour
     [Tooltip("Follows ZeroMQ syntax")]
 
     //public string ServerUri = "tcp://localhost:5556";
-    public string Server_Macbook_UR_RC_GUEST = "tcp://192.168.1.168:";
+    //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
+
+    public string BROKER_IP_ADDRESS = "tcp://10.4.2.3:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -23,6 +25,7 @@ public class vrCommClient : MonoBehaviour
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
     public event SimulationUpdateAction OnSimulationUpdate;
+
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
 
     private SubscriberSocket SubClient;
@@ -45,9 +48,11 @@ public class vrCommClient : MonoBehaviour
 
         ForceDotNet.Force();
 
+        //BROKER_IP_ADDRESS = PlayerPrefs.GetString("IPAddress", "No-Value");
+
         // set-up sockets
-        string upstream_port_address = Server_Macbook_UR_RC_GUEST + "5556";
-        string downstream_port_address = Server_Macbook_UR_RC_GUEST + "5559";
+        string upstream_port_address = BROKER_IP_ADDRESS + "5556";
+        string downstream_port_address = BROKER_IP_ADDRESS + "5559";
 
         FrameClient = new DealerSocket();
         FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);

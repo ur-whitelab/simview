@@ -21,6 +21,9 @@ poller.register(backend, zmq.POLLIN)
 
 client_ids = []
 
+expecting_state_update = False
+last_state_update = []
+
 while True:
     socks = dict(poller.poll())
 
@@ -40,7 +43,17 @@ while True:
             print(str(len(client_ids)) + " client(s) connected")
         elif msg_type == 'simulation-update':
             backend.send_multipart([msg_type, message[2]])    
+            last_state_update = [msg_type, message[2]]
+            expecting_state_update = False #Unity obliged Hoomd's state-update request
+
+        #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
+        if expecting_state_update and last_state_update != []:
+            backend.send_multipart(last_state_update)
+            expecting_state_update = False
 
     if socks.get(backend) == zmq.POLLIN:
         message = backend.recv_multipart()
+        msg_type = message[0]
+        if msg_type == 'state-update':
+            expecting_state_update = True
         publisher.send_multipart(message)

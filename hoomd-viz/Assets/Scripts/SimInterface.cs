@@ -13,7 +13,7 @@ public class SimInterface : MonoBehaviour
     public Text PressureText;
 
     private float setTemperature = 0.15f;
-    private float setDensity = 0.03f;
+    private float setPressure = 0.0f;
     private float scale = 1.0f;
 
     private vrCommClient cc;
@@ -39,23 +39,21 @@ public class SimInterface : MonoBehaviour
 
         if (data.ContainsKey("density"))
         {
-            DensityText.text = "Density: " + Math.Round(float.Parse(data["density"]), 3) + "(" + Math.Round(setDensity, 2) + ")";
+            DensityText.text = "Density: " + Math.Round(float.Parse(data["density"]), 3);
         }
-        else
-        {
-            DensityText.text = "Density: " + "(" + Math.Round(setDensity, 2) + ")";
-        }
-
 
         if (data.ContainsKey("pressure"))
         {
-            PressureText.text = "Pressure: " + Math.Round(float.Parse(data["pressure"]), 3);
+            PressureText.text = "Pressure: " + Math.Round(float.Parse(data["pressure"]), 3) + "(" + Math.Round(setPressure, 2) + ")";
+        } else
+        {
+            PressureText.text = "Pressure: " + Math.Round(setPressure, 2);
         }
 
         // now set data
         var newdata = new Dictionary<string, string>();
         newdata["temperature"] = "" + setTemperature;
-        newdata["density"] = "" + setDensity;
+        newdata["pressure"] = "" + setPressure;
         newdata["box"] = "" + scale;
         scale = 1f;
         cc.SetMessage(newdata);
@@ -72,13 +70,13 @@ public class SimInterface : MonoBehaviour
             setTemperature -= 0.01f;
         }
 
-        if(Input.GetKeyDown(KeyCode.D))
+        if(Input.GetKeyDown(KeyCode.P))
         {
-            setDensity += 0.001f;
+            setPressure += 0.001f;
         }
-        if (Input.GetKeyDown(KeyCode.C))
+        if (Input.GetKeyDown(KeyCode.L))
         {
-            setDensity -= 0.001f;
+            setPressure -= 0.001f;
         }
 
         if (Input.GetKeyDown(KeyCode.S))

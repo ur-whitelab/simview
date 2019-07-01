@@ -12,8 +12,9 @@ lj = hoomd.md.pair.lj(r_cut=2.5, nlist=nl)
 lj.pair_coeff.set('A', 'A', epsilon=1.0, sigma=1.0)
 hoomd.md.integrate.mode_standard(dt=0.005)
 #hoomd.md.update.enforce2d()
-nvt = hoomd.md.integrate.nvt(group=hoomd.group.all(), kT=0.15, tau=0.5)
-nvt.randomize_velocities(0)
+#nvt = hoomd.md.integrate.nvt(group=hoomd.group.all(), kT=0.15, tau=0.5)
+npt = hoomd.md.integrate.npt(group=hoomd.group.all(), kT=0.15, P=0.0, tau=0.5, tauP=2.0)
+npt.randomize_velocities(0)
 state_vars = ['temperature', 'volume', 'num_particles', 'pressure', 'lx', 'ly', 'lz']
 log = hoomd.analyze.log(filename=None, quantities=state_vars, period=1)
 
@@ -26,10 +27,10 @@ scale = 1
 def set_callback(**data):
     if 'temperature' in data:
         print('temperature', data['temperature'])
-        nvt.set_params(kT = max(0.001,float(data['temperature'])))
-    if 'density' in data:
-        print('density', data['density'])
-        nvt.set_params()
+        npt.set_params(kT = max(0.001,float(data['temperature'])))
+    if 'pressure' in data:
+        print('pressure', data['pressure'])
+        npt.set_params(P = float(data['pressure']))
     if 'box' in data:
         scale = float(data['box'])
         print('Resizing to', scale * log.query('lx') , ' x ', scale * log.query('lz'))
