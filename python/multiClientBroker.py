@@ -2,7 +2,7 @@ import zmq
 import sys
 import time
 from random import randint, random
-import atexit
+import pickle
 
 context = zmq.Context()
 
@@ -22,16 +22,17 @@ poller.register(backend, zmq.POLLIN)
 client_ids = []
 
 expecting_state_update = False
-last_state_update = []
+last_state_update = pickle.load(open("default_state_update.p", "rb"))
 
 while True:
     socks = dict(poller.poll())
 
     if socks.get(frontend) == zmq.POLLIN:
         message = frontend.recv_multipart()
+        #First element is client id, 2nd is message type.
         client_id = message[0]
         msg_type = message[1]
-        #First element is client id, 2nd is message type.
+        
         #The 'first-msg' and 'last-msg' if blocks are not strictly necessary but they provide useful debug info.
         if msg_type == 'first-msg':
             client_ids.append(client_id)
@@ -42,8 +43,7 @@ while True:
             print(str(client_id) + " is disconnected.")
             print(str(len(client_ids)) + " client(s) connected")
         elif msg_type == 'simulation-update':
-            backend.send_multipart([msg_type, message[2]])    
-            last_state_update = [msg_type, message[2]]
+            backend.send_multipart([msg_type, message[2]])
             expecting_state_update = False #Unity obliged Hoomd's state-update request
 
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
