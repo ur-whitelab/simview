@@ -2,7 +2,7 @@ import zmq
 import sys
 import time
 from random import randint, random
-import pickle
+import json
 
 context = zmq.Context()
 
@@ -22,7 +22,14 @@ poller.register(backend, zmq.POLLIN)
 client_ids = []
 
 expecting_state_update = False
-last_state_update = pickle.load(open("default_state_update.p", "rb"))
+
+default_state_update = {
+    "temperature": "0.15",
+    "pressure": "0",
+    "box": "1"
+}
+default_state_update = json.dumps(default_state_update)
+last_state_update_msg = ["state-update",default_state_update]
 
 while True:
     socks = dict(poller.poll())
@@ -47,8 +54,8 @@ while True:
             expecting_state_update = False #Unity obliged Hoomd's state-update request
 
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
-        if expecting_state_update and last_state_update != []:
-            backend.send_multipart(last_state_update)
+        if expecting_state_update and last_state_update_msg != []:
+            backend.send_multipart(last_state_update_msg)
             expecting_state_update = False
 
     if socks.get(backend) == zmq.POLLIN:
