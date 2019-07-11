@@ -43,14 +43,13 @@ public class vrCommClient : MonoBehaviour
 
     private int last_msg_not_rec_fc = 0;
 
+    private bool all_bonds_read = false;
+
     // Start is called before the first frame update
     void Start()
     {
 
-#if UNITY_ANDROID
-
         client_id = SystemInfo.deviceUniqueIdentifier;
-#endif
 
         Debug.Log("client id: " + client_id);
 
@@ -84,7 +83,20 @@ public class vrCommClient : MonoBehaviour
     {
         List<byte[]> msg = null;
 
-        bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        //bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        bool received = false;
+
+        if (!all_bonds_read)
+        {
+            //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
+            //Either we'll get them or we will get them eventually once Hoomd starts for the first time.
+            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        }
+        else
+        {
+            //normal execution of program.
+            received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        }
 
         if (msg == null || !received)
         {
@@ -112,7 +124,6 @@ public class vrCommClient : MonoBehaviour
                     break;
             }
                 
-
             case ("frame-complete"):
                 //Debug.Log("frame-complete " + Time.frameCount);
                 if (OnCompleteFrame != null)
@@ -163,21 +174,30 @@ public class vrCommClient : MonoBehaviour
         }
     }
 
-//#if UNITY_ANDROID
+    public void setAllBondsRead(bool b)
+    {
+        all_bonds_read = b;
+    }
 
-//    private void OnApplicationPause(bool pause)
-//    {
-//        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+    public bool getAllBondsRead()
+    {
+        return all_bonds_read;
+    }
 
-//        FrameClient.Close();
-//        FrameClient.Dispose();
+    //#if UNITY_ANDROID
 
-//        SubClient.Close();
-//        SubClient.Dispose();
-//    }
+    //    private void OnApplicationPause(bool pause)
+    //    {
+    //        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
 
-//#endif
+    //        FrameClient.Close();
+    //        FrameClient.Dispose();
 
+    //        SubClient.Close();
+    //        SubClient.Dispose();
+    //    }
+
+    //#endif
 
     private void OnApplicationQuit()
     {

@@ -33,7 +33,6 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private List<Vector3Int> mBonds;
     
-    private bool all_bonds_read;
     // Start is called before the first frame update
     void Start()
     {
@@ -43,8 +42,9 @@ public class MoleculeSystemGPU : MonoBehaviour
         cc.OnNewBondFrame += MolSysProcessBondFrameUpdate;
         cc.OnCompleteBondFrame += MolSysProcessBondFrameComplete;
 
+        cc.setAllBondsRead(false);
+
         mBonds = new List<Vector3Int>();
-        all_bonds_read = false;
 
         posOffset = new Vector3(0, 2.2f, 3.14f);
 
@@ -116,11 +116,11 @@ public class MoleculeSystemGPU : MonoBehaviour
     {
         for (int i = frame.I; i < frame.I + frame.N; i++)
         {
-            //(first particle idx, second particle idx, bond type)
+            //(first particle idx, second particle idx, bond type) For some reason ZMQ switches T and B around.
             Vector3Int bond_data = new Vector3Int(frame.Bonds(i - frame.I).Value.A,
-                                                  frame.Bonds(i - frame.I).Value.B,
-                                                  frame.Bonds(i - frame.I).Value.T);
-
+                                                  frame.Bonds(i - frame.I).Value.T,
+                                                  frame.Bonds(i - frame.I).Value.B);
+            Debug.Log("bond.a: " + bond_data.x + " bond.b: " + bond_data.y + " bond.T: " + bond_data.z);
             mBonds.Add(bond_data);
         }
     }
@@ -129,13 +129,13 @@ public class MoleculeSystemGPU : MonoBehaviour
     {
         Debug.Log(mBonds.Count + " bonds read in total.");
 
-        all_bonds_read = true;
+        cc.setAllBondsRead(true);
     }
 
     private void InitSystem()
     {
 
-        if (!all_bonds_read)
+        if (!cc.getAllBondsRead())
         {
             Debug.Log("Trying to initialize molecule system without all bond data being sent to Unity!");
         }
@@ -222,5 +222,4 @@ public class MoleculeSystemGPU : MonoBehaviour
         scaleF += scaleDelta;
         scaleF = Mathf.Clamp(scaleF, 0.02f, 0.1f);
     }
-
 }
