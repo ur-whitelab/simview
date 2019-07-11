@@ -8,13 +8,15 @@
 
 ZMQHook::ZMQHook(pybind11::object& pyself, std::shared_ptr<SystemDefinition> sysdef, unsigned int period, const char* uri, unsigned int message_size) :
  m_pyself(pyself), m_context(1), m_socket(m_context, ZMQ_PAIR),
-m_pdata(sysdef->getParticleData()),
+m_pdata(sysdef->getParticleData()), m_bdata(sysdef->getBondData()),
 m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(period), m_N(0) {
 
-    m_socket.bind(uri);
+    m_socket.connect(uri);
       m_exec_conf->msg->notice(2)
       << "Bound ZMQ Socket on " << uri
       << std::endl;
+
+      std::cout << "FB size:" << sizeof(HZMsg::Scalar4) << ", hoomd: " << sizeof(Scalar4) << std::endl; 
 
     // check a few things
     assert(FLATBUFFERS_LITTLEENDIAN);
@@ -25,6 +27,8 @@ m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(per
     }
 
     updateSize(message_size);
+
+    sendBondInfo();
 
 }
 
@@ -38,10 +42,12 @@ void ZMQHook::updateSize(unsigned int N) {
   // build our buffer
   m_fbb = new flatbuffers::FlatBufferBuilder();
   HZMsg::Scalar4 fbb_scalar4s[N];
+  HZMsg::Bond fbb_bond_triples[N];
   auto fbb_positions = m_fbb->CreateVectorOfStructs(fbb_scalar4s, N);
+  auto fbb_bonds = m_fbb->CreateVectorOfStructs(fbb_bond_triples, N);
   // why 1? Because if you use default, it assumes you don't want that position
   // so you cannot mutate it later
-  auto frame = HZMsg::CreateFrame(*m_fbb, N, 1, 1, fbb_positions);
+  auto frame = HZMsg::CreateFrame(*m_fbb, N, 1, 1, fbb_positions, fbb_bonds);
   HZMsg::FinishFrameBuffer(*m_fbb, frame);
 
   // update our N
@@ -50,6 +56,72 @@ void ZMQHook::updateSize(unsigned int N) {
 
 void ZMQHook::setSystemDefinition(std::shared_ptr<SystemDefinition> sysdef) {
   //pass
+}
+
+void ZMQHook::sendBondInfo() {
+      std::cout << "sending bond info..." << std::endl;
+      auto bonds_data = getBondsFromSystem();
+      size_t N = bonds_data.size();
+      //get mutable frame
+      auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
+      int Ni = 0;
+      int count = 0;
+      for(unsigned int i = 0; i < N; i += m_N) {
+        // our message will be either m_N or long enough to complete sending the positions
+        // why doesn't std::min work here?
+        Ni = m_N <= N - (i + m_N) ? m_N : N - i;
+        frame->mutate_I(i);
+        frame->mutate_N(Ni);
+        //frame->mutate_time(timestep);
+        //memcpy over the positions
+        memcpy(frame->mutable_bonds(), &bonds_data.data()[i], Ni * sizeof(HZMsg::Bond));
+        // set up message
+        zmq::multipart_t multipart;
+        // we will copy the framebuffer (this ctor does it).
+        // Otherwise we can have repeated messages!
+        zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize());
+        // move to multipart
+        multipart.addstr("bonds-update");
+        multipart.add(std::move(msg));
+        // send over wire
+        // message should already refer to flatbuffer pointer
+        //std::cout << " set up for send " << std::endl;
+        multipart.send(m_socket);
+        std::cout << " sent bond msg " << std::endl;
+        //std::cout << " after send " << std::endl;
+        count += 1;
+      }
+      std::cout << "...complete" << std::endl;
+      m_socket.send(zmq::message_t("bonds-complete", 14));
+
+}
+
+std::vector<HZMsg::Bond> ZMQHook::getBondsFromSystem(){
+  
+  size_t pN = m_pdata->getN();
+  const unsigned int num_bonds = (unsigned int)m_bdata->getN(); 
+
+  std::vector<HZMsg::Bond> _bonds;
+
+  std::cout << " num_bonds: " << num_bonds << std::endl;
+
+  for (unsigned int i = 0; i < num_bonds; i++)
+  {
+    const BondData::members_t bond = m_bdata->getMembersByIndex(i);
+    assert(bond.tag[0] < pN);
+    assert(bond.tag[1] < pN);
+
+    unsigned int bond_type = m_bdata->getTypeByIndex(i);
+
+    std::cout << " bond.tag[0]: " << bond.tag[0] << ", bond.tag[1]: " << bond.tag[1] << ", bond type: " << bond_type << std::endl;
+
+    HZMsg::Bond msgBond = HZMsg::Bond(bond.tag[0], bond.tag[1], bond_type);
+    
+    _bonds.push_back(msgBond);
+
+  }
+  
+  return _bonds;
 }
 
 inline void my_free(void* data, void* hint) {
@@ -85,35 +157,37 @@ void ZMQHook::update(unsigned int timestep)  {
         // move to multipart
         multipart.addstr("frame-update");
         multipart.add(std::move(msg));
-
         // send over wire
         // message should already refer to flatbuffer pointer
+        //std::cout << " set up for send " << std::endl;
         multipart.send(m_socket);
+        //std::cout << " after send " << std::endl;
         count += 1;
       }
 
       m_socket.send(zmq::message_t("frame-complete", 14));
 
-      // now send simulation state
-      // set up message
+      //now send simulation state
+      //set up message
       if( (timestep / m_period) % 10 == 0) {
-        
+
 	      zmq::multipart_t multipart;
 	      pybind11::object pystring = m_pyself.attr("get_state_msg")();
 	      std::string s = pystring.cast<std::string>();
 	      zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
 	      multipart.addstr("state-update");
 	      multipart.add(std::move(msg));
+       // std::cout << " send state update " << std::endl;
 	      multipart.send(m_socket);
-	
+	     //std::cout << " succ sent state update " << std::endl;
 	      // now receive response
 	      multipart.recv(m_socket);
+//std::cout << " rec  state update " << std::endl;
 	      // assume it's correct name
 	      multipart.pop();
 	      zmq::message_t reply = multipart.pop();
 	      char* data = static_cast<char*>(reply.data());
 	      m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
-
       }
   }
 }

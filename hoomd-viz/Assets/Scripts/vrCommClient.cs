@@ -17,7 +17,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://10.4.2.3:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -25,6 +25,12 @@ public class vrCommClient : MonoBehaviour
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
     public event SimulationUpdateAction OnSimulationUpdate;
+
+    public event NewBondFrameAction OnNewBondFrame;
+    public event CompleteBondFrameAction OnCompleteBondFrame;
+    public delegate void NewBondFrameAction(Frame frame);
+    public delegate void CompleteBondFrameAction();
+   
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
 
@@ -34,6 +40,8 @@ public class vrCommClient : MonoBehaviour
     private string sendMsgStr = "{}";
 
     string client_id = "0";
+
+    private int last_msg_not_rec_fc = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -80,6 +88,13 @@ public class vrCommClient : MonoBehaviour
 
         if (msg == null || !received)
         {
+
+            int fc = Time.frameCount;
+
+            Debug.Log("Message not received " + Time.frameCount + ", frames since last msg skip: " + (fc - last_msg_not_rec_fc));
+
+            last_msg_not_rec_fc = Time.frameCount;
+
             return;
         }
 
@@ -88,21 +103,24 @@ public class vrCommClient : MonoBehaviour
         switch (msgType)
         {
             case ("frame-update"):
-
-                var buf = new ByteBuffer(msg[1]);
-                var frame = Frame.GetRootAsFrame(buf);
-                if (OnNewFrame != null)
-                    OnNewFrame(frame);
-                break;
+            {
+                    //Debug.Log("frame-update " + Time.frameCount);
+                    var buf = new ByteBuffer(msg[1]);
+                    var frame = Frame.GetRootAsFrame(buf);
+                    if (OnNewFrame != null)
+                        OnNewFrame(frame);
+                    break;
+            }
+                
 
             case ("frame-complete"):
-
+                //Debug.Log("frame-complete " + Time.frameCount);
                 if (OnCompleteFrame != null)
                     OnCompleteFrame();
                 break;
 
             case ("state-update"):
-
+               // Debug.Log("state-update " + Time.frameCount);
                 if (OnSimulationUpdate != null)
                 {
                     string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
@@ -122,6 +140,21 @@ public class vrCommClient : MonoBehaviour
 
                 sendMsgStr = "{}";
 
+                break;
+
+            case ("bonds-update"):
+            {
+                    var buf = new ByteBuffer(msg[1]);
+                    var frame = Frame.GetRootAsFrame(buf);
+                    if (OnNewBondFrame != null)
+                        OnNewBondFrame(frame);
+
+                    break;
+            }
+                
+            case ("bonds-complete"):
+                if (OnCompleteBondFrame != null)
+                    OnCompleteBondFrame();
                 break;
 
             default:

@@ -5,7 +5,6 @@ using HZMsg;
 
 public class MoleculeSystemGPU : MonoBehaviour
 {
-
     [SerializeField]
     private Transform atomPrefab;
     [SerializeField]
@@ -27,17 +26,36 @@ public class MoleculeSystemGPU : MonoBehaviour
     [SerializeField]
     private float scaleF = 0.1f;
 
+    private float last_graphics_update_time;
+    private int last_graphics_update_frameCount;
+    private float total_fps_sum;
+    private float num_graphics_updates;
+
+    private List<Vector3Int> mBonds;
+    
+    private bool all_bonds_read;
     // Start is called before the first frame update
     void Start()
     {
         cc.OnNewFrame += MolSysProcessFrameUpdate;
         cc.OnCompleteFrame += MolSysEndFrameUpdate;
 
+        cc.OnNewBondFrame += MolSysProcessBondFrameUpdate;
+        cc.OnCompleteBondFrame += MolSysProcessBondFrameComplete;
+
+        mBonds = new List<Vector3Int>();
+        all_bonds_read = false;
+
         posOffset = new Vector3(0, 2.2f, 3.14f);
 
         moleculeTransforms = new Transform[max_num_molecules];
         frameUpdatePositions = new Vector3[max_num_molecules];
         activeMolecules = new bool[max_num_molecules];
+
+        last_graphics_update_time = 0.0f;
+        last_graphics_update_frameCount = 0;
+        total_fps_sum = 0.0f;
+        num_graphics_updates = 0.0f;
 
         InitSystem();
     }
@@ -55,6 +73,7 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private void MolSysEndFrameUpdate()
     {
+        num_graphics_updates += 1.0f;
         //update graphics
         for (int i = 0; i < max_num_molecules; i++)
         {
@@ -69,10 +88,58 @@ public class MoleculeSystemGPU : MonoBehaviour
             }
         }
         activeMolecules = new bool[max_num_molecules]; //reset active mol array.
+
+        float current_graphics_update_time = Time.time;
+        float current_graphics_update_frameCount = Time.frameCount;
+
+        float time_delta = current_graphics_update_time - last_graphics_update_time;
+        float frame_delta = current_graphics_update_frameCount - last_graphics_update_frameCount;
+
+        float delta_fps = frame_delta / time_delta;
+
+        total_fps_sum += delta_fps;
+        float avg_fps = total_fps_sum / num_graphics_updates;
+
+        if (Mathf.Abs(delta_fps - avg_fps) >= 10.0f)
+        {
+            Debug.Log("average fps: " + avg_fps);
+            Debug.Log("frames since last graphics update: " + frame_delta);
+            Debug.Log("seconds since last graphics update: " + time_delta);
+            Debug.Log("graphics fps: " + delta_fps);
+        }
+
+        last_graphics_update_time = Time.time;
+        last_graphics_update_frameCount = Time.frameCount;
+    }
+
+    private void MolSysProcessBondFrameUpdate(Frame frame)
+    {
+        for (int i = frame.I; i < frame.I + frame.N; i++)
+        {
+            //(first particle idx, second particle idx, bond type)
+            Vector3Int bond_data = new Vector3Int(frame.Bonds(i - frame.I).Value.A,
+                                                  frame.Bonds(i - frame.I).Value.B,
+                                                  frame.Bonds(i - frame.I).Value.T);
+
+            mBonds.Add(bond_data);
+        }
+    }
+
+    private void MolSysProcessBondFrameComplete()
+    {
+        Debug.Log(mBonds.Count + " bonds read in total.");
+
+        all_bonds_read = true;
     }
 
     private void InitSystem()
     {
+
+        if (!all_bonds_read)
+        {
+            Debug.Log("Trying to initialize molecule system without all bond data being sent to Unity!");
+        }
+
         MaterialPropertyBlock properties = new MaterialPropertyBlock();
         for (int i = 0; i < max_num_molecules; i++)
         {

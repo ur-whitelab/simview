@@ -35,11 +35,16 @@ private:
 
   void updateSize(unsigned int N);
 
+  void sendBondInfo();
+
+  std::vector<HZMsg::Bond> getBondsFromSystem();
+
   pybind11::object m_pyself;
   zmq::context_t m_context;
   zmq::socket_t m_socket;
   zmq::message_t* m_message;
   std::shared_ptr<const ParticleData> m_pdata;
+  std::shared_ptr<const BondData> m_bdata;
   std::shared_ptr<const ExecutionConfiguration> m_exec_conf;
   flatbuffers::FlatBufferBuilder* m_fbb;
   unsigned int m_period;
