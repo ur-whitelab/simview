@@ -8,9 +8,9 @@ struct Scalar4 {
 }
 
 struct Bond {
-	a : int;
-	b : int;
-	T : int;
+  a1 : int;
+  a2: int;
+  t : int;
 }
 
 table Frame {

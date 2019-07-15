@@ -35,9 +35,11 @@ private:
 
   void updateSize(unsigned int pN, unsigned int bN);
 
+  void bondPairsToHZMsg(const std::vector<std::pair<int,int>> &bp, const std::vector<int> &bt, std::vector<HZMsg::Bond> &bd);
+
   void sendBondInfo();
 
-  std::vector<std::vector<int>> findMolecules();
+  std::vector<std::vector<int>> findMolecules(std::vector<std::pair<int,int>> &bond_pairs, std::vector<int> &bond_types);
 
   pybind11::object m_pyself;
   zmq::context_t m_context;
