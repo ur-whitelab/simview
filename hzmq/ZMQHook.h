@@ -33,11 +33,11 @@ public:
 
 private:
 
-  void updateSize(unsigned int N);
+  void updateSize(unsigned int pN, unsigned int bN);
 
   void sendBondInfo();
 
-  std::vector<HZMsg::Bond> getBondsFromSystem();
+  std::vector<std::vector<int>> findMolecules();
 
   pybind11::object m_pyself;
   zmq::context_t m_context;
