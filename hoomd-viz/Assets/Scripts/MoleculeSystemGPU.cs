@@ -16,7 +16,7 @@ public class MoleculeSystemGPU : MonoBehaviour
     private Vector3[] frameUpdatePositions;
     private bool[] activeMolecules;
 
-    private int max_num_molecules = 4000;
+    private int max_num_molecules = 5000;
     private float init_radius = 50f;
     private float bond_length = 0.075f;
 
@@ -32,6 +32,7 @@ public class MoleculeSystemGPU : MonoBehaviour
     private float num_graphics_updates;
 
     private List<Vector3Int> mBonds;
+    int bond_data_container_size = 3;//a1,a2,type.
     
     // Start is called before the first frame update
     void Start()
@@ -112,17 +113,25 @@ public class MoleculeSystemGPU : MonoBehaviour
         last_graphics_update_frameCount = Time.frameCount;
     }
 
-    private void MolSysProcessBondFrameUpdate(Frame frame)
+    private void MolSysProcessBondFrameUpdate(string msg_string)
     {
-        for (int i = frame.I; i < frame.I + frame.N; i++)
+        string[] _bonds = msg_string.Split('/');
+        foreach (var b in _bonds)
         {
-            //(first particle idx, second particle idx, bond type) For some reason ZMQ switches T and B around.
-            Vector3Int bond_data = new Vector3Int(frame.Bonds(i - frame.I).Value.A,
-                                                  frame.Bonds(i - frame.I).Value.T,
-                                                  frame.Bonds(i - frame.I).Value.B);
-            Debug.Log("bond.a: " + bond_data.x + " bond.b: " + bond_data.y + " bond.T: " + bond_data.z);
-            mBonds.Add(bond_data);
+            string[] b_data = b.Split(',');
+            int[] b_data_int = new int[bond_data_container_size];
+            int idx = 0;
+            foreach (var _d in b_data)
+            {
+                int tmp = 0;
+                int.TryParse(_d, out tmp);
+                b_data_int[idx] = tmp;
+                idx++;
+            }
+            mBonds.Add(new Vector3Int(b_data_int[0], b_data_int[1], b_data_int[2]));
         }
+        Debug.Log("num bonds: " + mBonds.Count);
+
     }
 
     private void MolSysProcessBondFrameComplete()

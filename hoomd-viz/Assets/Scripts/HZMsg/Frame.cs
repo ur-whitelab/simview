@@ -25,17 +25,13 @@ public struct Frame : IFlatbufferObject
   public bool MutateTime(int time) { int o = __p.__offset(8); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, time); return true; } else { return false; } }
   public Scalar4? Positions(int j) { int o = __p.__offset(10); return o != 0 ? (Scalar4?)(new Scalar4()).__assign(__p.__vector(o) + j * 16, __p.bb) : null; }
   public int PositionsLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public Bond? Bonds(int j) { int o = __p.__offset(12); return o != 0 ? (Bond?)(new Bond()).__assign(__p.__vector(o) + j * 12, __p.bb) : null; }
-  public int BondsLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<Frame> CreateFrame(FlatBufferBuilder builder,
       int N = 0,
       int I = 0,
       int time = 0,
-      VectorOffset positionsOffset = default(VectorOffset),
-      VectorOffset bondsOffset = default(VectorOffset)) {
-    builder.StartObject(5);
-    Frame.AddBonds(builder, bondsOffset);
+      VectorOffset positionsOffset = default(VectorOffset)) {
+    builder.StartObject(4);
     Frame.AddPositions(builder, positionsOffset);
     Frame.AddTime(builder, time);
     Frame.AddI(builder, I);
@@ -43,14 +39,12 @@ public struct Frame : IFlatbufferObject
     return Frame.EndFrame(builder);
   }
 
-  public static void StartFrame(FlatBufferBuilder builder) { builder.StartObject(5); }
+  public static void StartFrame(FlatBufferBuilder builder) { builder.StartObject(4); }
   public static void AddN(FlatBufferBuilder builder, int N) { builder.AddInt(0, N, 0); }
   public static void AddI(FlatBufferBuilder builder, int I) { builder.AddInt(1, I, 0); }
   public static void AddTime(FlatBufferBuilder builder, int time) { builder.AddInt(2, time, 0); }
   public static void AddPositions(FlatBufferBuilder builder, VectorOffset positionsOffset) { builder.AddOffset(3, positionsOffset.Value, 0); }
   public static void StartPositionsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(16, numElems, 4); }
-  public static void AddBonds(FlatBufferBuilder builder, VectorOffset bondsOffset) { builder.AddOffset(4, bondsOffset.Value, 0); }
-  public static void StartBondsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(12, numElems, 4); }
   public static Offset<Frame> EndFrame(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Frame>(o);

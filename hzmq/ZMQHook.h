@@ -33,9 +33,7 @@ public:
 
 private:
 
-  void updateSize(unsigned int pN, unsigned int bN);
-
-  void bondPairsToHZMsg(const std::vector<std::pair<int,int>> &bp, const std::vector<int> &bt, std::vector<HZMsg::Bond> &bd);
+  void updateSize(unsigned int N);
 
   void sendBondInfo();
 

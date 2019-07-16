@@ -7,18 +7,11 @@ struct Scalar4 {
   w: float;
 }
 
-struct Bond {
-  a1 : int;
-  a2: int;
-  t : int;
-}
-
 table Frame {
   N: int;
   I: int;
   time: int;
   positions:[Scalar4];
-  bonds:[Bond];
 }
 
 root_type Frame;

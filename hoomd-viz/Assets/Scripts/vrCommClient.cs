@@ -28,7 +28,7 @@ public class vrCommClient : MonoBehaviour
 
     public event NewBondFrameAction OnNewBondFrame;
     public event CompleteBondFrameAction OnCompleteBondFrame;
-    public delegate void NewBondFrameAction(Frame frame);
+    public delegate void NewBondFrameAction(string msg_string);
     public delegate void CompleteBondFrameAction();
    
 
@@ -83,29 +83,29 @@ public class vrCommClient : MonoBehaviour
     {
         List<byte[]> msg = null;
 
-        //bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-        bool received = false;
+        bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        //bool received = false;
 
-        if (!all_bonds_read)
-        {
-            //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
-            //Either we'll get them or we will get them eventually once Hoomd starts for the first time.
-            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-        }
-        else
-        {
-            //normal execution of program.
-            received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-        }
+        //if (!all_bonds_read)
+        //{
+        //    //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
+        //    //Either we'll get them or we will get them eventually once Hoomd starts for the first time.
+        //    received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        //}
+        //else
+        //{
+        //    //normal execution of program.
+        //    received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        //}
 
         if (msg == null || !received)
         {
 
-            int fc = Time.frameCount;
+           // int fc = Time.frameCount;
 
-            Debug.Log("Message not received " + Time.frameCount + ", frames since last msg skip: " + (fc - last_msg_not_rec_fc));
+            //Debug.Log("Message not received " + Time.frameCount + ", frames since last msg skip: " + (fc - last_msg_not_rec_fc));
 
-            last_msg_not_rec_fc = Time.frameCount;
+          //  last_msg_not_rec_fc = Time.frameCount;
 
             return;
         }
@@ -155,10 +155,10 @@ public class vrCommClient : MonoBehaviour
 
             case ("bonds-update"):
             {
-                    var buf = new ByteBuffer(msg[1]);
-                    var frame = Frame.GetRootAsFrame(buf);
+                    //var buf = new ByteBuffer(msg[1]);
+                    //var frame = Frame.GetRootAsFrame(buf);
                     if (OnNewBondFrame != null)
-                        OnNewBondFrame(frame);
+                        OnNewBondFrame(System.Text.Encoding.UTF8.GetString(msg[1]));
 
                     break;
             }

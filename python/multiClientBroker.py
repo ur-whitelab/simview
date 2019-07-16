@@ -31,9 +31,9 @@ default_state_update = {
 default_state_update = json.dumps(default_state_update)
 last_state_update_msg = ["state-update", default_state_update]
 
-all_bond_messages = []
-hoomd_initialized = False;
-unity_initialized = False;
+# all_bond_messages = []
+# hoomd_initialized = False;
+# unity_initialized = False;
 
 def send_bonds_to_client(_id):
     print("sending bonds to client")
@@ -58,10 +58,10 @@ while True:
             print(str(client_id) + "is connected.")
             print(str(len(client_ids)) + " client(s) connected")
             #client initialized after hoomd so send it the bond data.
-            if hoomd_initialized:
-                send_bonds_to_client(client_id)
+            # if hoomd_initialized:
+            #     send_bonds_to_client(client_id)
 
-            unity_initialized = True
+            #unity_initialized = True
 
         elif msg_type == 'last-msg':
             client_ids.remove(client_id)
@@ -77,13 +77,12 @@ while True:
             expecting_state_update = False
 
     if socks.get(backend) == zmq.POLLIN:
-        hoomd_initialized = True #safe to assume b/c of asserts in ZMQHook.cc 
         message = backend.recv_multipart()
         msg_type = message[0]
         if msg_type == 'state-update':
             expecting_state_update = True
-        elif msg_type == 'bonds-update':
-            all_bond_messages.append(message)
-            print("num b messages: " + str(len(all_bond_messages)))
+        # elif msg_type == 'bonds-update':
+        #     all_bond_messages.append(message)
+        #     print("num b messages: " + str(len(all_bond_messages)))
 
         publisher.send_multipart(message)
