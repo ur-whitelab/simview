@@ -34,8 +34,8 @@ public:
 private:
 
   void updateSize(unsigned int N);
-
-  void sendBondInfo();
+//send bond data and particle names.
+  void sendInitInfo();
 
   std::vector<std::vector<int>> findMolecules(std::vector<std::pair<int,int>> &bond_pairs, std::vector<int> &bond_types);
 

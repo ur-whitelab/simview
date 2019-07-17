@@ -51,7 +51,7 @@ group_all = hoomd.group.all()
 kT = 1.9872 / 1000
 fire = hoomd.md.integrate.mode_minimize_fire(dt=0.5 / 48.9, ftol=1e-4, Etol=1e-8)
 nve = hoomd.md.integrate.nve(group=group_all)
-init_dump = hoomd.dump.gsd(filename= struct_dir + 'init.gsd', period=1, group=group_all, phase=0, overwrite=True)
+#init_dump = hoomd.dump.gsd(filename= struct_dir + 'init.gsd', period=1, group=group_all, phase=0, overwrite=True)
 
 state_vars = ['temperature', 'volume', 'num_particles', 'pressure', 'lx', 'ly', 'lz']
 log = hoomd.analyze.log(filename=None, quantities=state_vars, period=1)
@@ -65,12 +65,12 @@ for i in range(1):
 hoomd.md.integrate.mode_standard(dt=2 / 48.9)
 
 nve.disable()
-init_dump.disable()
+#init_dump.disable()
 
 
 #Now NVT
 hoomd.md.integrate.mode_standard(dt=0.005)
-nvt_dump = hoomd.dump.gsd(filename= struct_dir + 'trajectory.gsd', period=50, group=group_all, phase=0, overwrite=True)
+#nvt_dump = hoomd.dump.gsd(filename= struct_dir + 'trajectory.gsd', period=50, group=group_all, phase=0, overwrite=True)
 nvt = hoomd.md.integrate.nvt(group=group_all, kT=298 * kT, tau=100 / 48.9)
 nvt.randomize_velocities(0)
 

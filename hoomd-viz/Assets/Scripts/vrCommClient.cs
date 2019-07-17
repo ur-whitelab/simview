@@ -30,7 +30,13 @@ public class vrCommClient : MonoBehaviour
     public event CompleteBondFrameAction OnCompleteBondFrame;
     public delegate void NewBondFrameAction(string msg_string);
     public delegate void CompleteBondFrameAction();
-   
+
+    public event NewParticleNameAction OnNewName;
+    public event CompleteParicleNameAction OnCompleteNames;
+    public delegate void NewParticleNameAction(string msg_string);
+    public delegate void CompleteParicleNameAction();
+
+
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
 
@@ -166,6 +172,16 @@ public class vrCommClient : MonoBehaviour
             case ("bonds-complete"):
                 if (OnCompleteBondFrame != null)
                     OnCompleteBondFrame();
+                break;
+
+            case ("names-update"):
+                if (OnNewName != null)
+                    OnNewName(System.Text.Encoding.UTF8.GetString(msg[1]));
+                break;
+
+            case ("names-complete"):
+                if (OnCompleteNames != null)
+                    OnCompleteNames();
                 break;
 
             default:

@@ -26,7 +26,7 @@ m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(per
 
     updateSize(message_size);
 
-    sendBondInfo();
+    sendInitInfo();
 
 }
 
@@ -78,6 +78,7 @@ void ZMQHook::update(unsigned int timestep)  {
         frame->mutate_I(i);
         frame->mutate_N(Ni);
         frame->mutate_time(timestep);
+
         //memcpy over the positions
         memcpy(frame->mutable_positions(), &positions_data.data[i], Ni * sizeof(Scalar4));
 
@@ -121,34 +122,83 @@ void ZMQHook::update(unsigned int timestep)  {
       }
   }
 }
-//send bond data.
-void ZMQHook::sendBondInfo() {
+//send bond data and particle names.
+void ZMQHook::sendInitInfo() {
+
+      //bond/names message size. Since we can't assume bonds.size() != particles.size(), a msg size that works for
+      //positions may not work for bonds.
+      int m_b_N = 100; 
+
+        // for (int i = 0; i< pN; i++)
+  // {
+  //   std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].x << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
+  //   std::cout << "pd name: " << m_pdata->getNameByType(positions_data.data[i].w) << std::endl;
+
+  //   unsigned int _t = m_pdata->getType(i);
+  //   std::cout << " type of particle " << i << ": " << _t << " name(_t): " << m_pdata->getNameByType(_t) << std::endl;
+  // }
+
+      std::cout << "sending particle names..." << std::endl;
+      size_t pN = m_pdata->getN();
+      auto positions = m_pdata->getPositions();
+      size_t ppN = positions.getNumElements();
+      std::cout << " num particles PN: " << pN << " ppN: " << ppN << std::endl;
+      //index,name
+      for (unsigned int i = 0; i < pN; i+= m_b_N)
+      {
+        std::string msg_str = ""; 
+        for (int j = 0; j < m_b_N; j++)
+        {
+          unsigned int idx = i+j;
+          std::string _name = m_pdata->getNameByType(m_pdata->getType(idx));
+          std::string str_builder = "";
+          if (j == 0)
+          {
+            str_builder = std::to_string(idx) + "," + _name;
+          } else {
+            str_builder = "/" + std::to_string(idx) + "," + _name;
+          }
+          msg_str.append(str_builder);
+        }
+        msg_str.append("\n");
+        zmq::multipart_t multipart;
+        multipart.addstr("names-update");
+        multipart.addstr(msg_str);
+        multipart.send(m_socket);
+      }
+
+      m_socket.send(zmq::message_t("names-complete", 14));
+      std::cout << "...done sending particle names" << std::endl;
+
+      // int num_particle_types = m_pdata->getNTypes();
+      // std::cout << " num_particle_types: " << num_particle_types << std::endl;
+      // auto nametest = m_pdata->getNameByType(0);
+      // std::cout << "nametest: " << nametest << std::endl;
+
       std::cout << "sending bond info..." << std::endl;
       std::vector<std::pair<int,int>> bond_pairs;
       std::vector<int> bond_types;
       std::vector<std::vector<int>> mols_data = findMolecules(bond_pairs, bond_types);
       size_t bN = bond_pairs.size();
 
-      std::cout << " num bonds pairs " << bond_pairs.size() << ", bond types: " << bond_types.size() << std::endl;
-      std::cout << "m_N: " << m_N << std::endl;
-      
-      //bond message size. Since we can't assume bonds.size() != particles.size(), a msg size that works for
-      //positions may not work for bonds.
-      int m_b_N = 200; 
-
       for(unsigned int i = 0; i < bN; i += m_b_N)
       {
         std::string msg_str = "";
         for (int j = 0; j < m_b_N; j++)
         {
-          std::cout << "idx: " << (i+j) << std::endl;
           std::pair<int,int> _pair = bond_pairs[i+j];
           int _type = bond_types[i+j];
-          std::string str_builder = "/" + std::to_string(_pair.first) + "," +  std::to_string(_pair.second) + "," + std::to_string(_type);
+          std::string str_builder = "";
+          if (j == 0)
+          {
+            str_builder = std::to_string(_pair.first) + "," +  std::to_string(_pair.second) + "," + std::to_string(_type);
+          } else 
+          {
+            str_builder = "/" + std::to_string(_pair.first) + "," +  std::to_string(_pair.second) + "," + std::to_string(_type);
+          }
           msg_str.append(str_builder);
         }
         msg_str.append("\n");
-        std::cout << " msg_str: " << msg_str << std::endl; 
         zmq::multipart_t multipart;
         multipart.addstr("bonds-update");
         multipart.addstr(msg_str);

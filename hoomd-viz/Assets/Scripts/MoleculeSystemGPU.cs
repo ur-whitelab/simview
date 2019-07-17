@@ -16,7 +16,8 @@ public class MoleculeSystemGPU : MonoBehaviour
     private Vector3[] frameUpdatePositions;
     private bool[] activeMolecules;
 
-    private int max_num_molecules = 5000;
+    private int num_positions_from_hoomd = 0;
+    private int num_particles_from_hoomd = 0;
     private float init_radius = 50f;
     private float bond_length = 0.075f;
 
@@ -24,7 +25,7 @@ public class MoleculeSystemGPU : MonoBehaviour
     private Vector3 posOffset;
 
     [SerializeField]
-    private float scaleF = 0.1f;
+    private float scaleF = 1.0f;
 
     private float last_graphics_update_time;
     private int last_graphics_update_frameCount;
@@ -33,6 +34,9 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private List<Vector3Int> mBonds;
     int bond_data_container_size = 3;//a1,a2,type.
+
+    private List<string> particleNames;
+    private int num_names_read = 0;
     
     // Start is called before the first frame update
     void Start()
@@ -43,22 +47,20 @@ public class MoleculeSystemGPU : MonoBehaviour
         cc.OnNewBondFrame += MolSysProcessBondFrameUpdate;
         cc.OnCompleteBondFrame += MolSysProcessBondFrameComplete;
 
+        cc.OnNewName += MolSysProcessParticleNames;
+        cc.OnCompleteNames += MolSysProcessNamesComplete;
+
         cc.setAllBondsRead(false);
 
         mBonds = new List<Vector3Int>();
+        particleNames = new List<string>();
 
         posOffset = new Vector3(0, 2.2f, 3.14f);
-
-        moleculeTransforms = new Transform[max_num_molecules];
-        frameUpdatePositions = new Vector3[max_num_molecules];
-        activeMolecules = new bool[max_num_molecules];
 
         last_graphics_update_time = 0.0f;
         last_graphics_update_frameCount = 0;
         total_fps_sum = 0.0f;
         num_graphics_updates = 0.0f;
-
-        InitSystem();
     }
 
     private void MolSysProcessFrameUpdate(Frame frame)
@@ -76,7 +78,7 @@ public class MoleculeSystemGPU : MonoBehaviour
     {
         num_graphics_updates += 1.0f;
         //update graphics
-        for (int i = 0; i < max_num_molecules; i++)
+        for (int i = 0; i < num_positions_from_hoomd; i++)
         {
             moleculeTransforms[i].position = frameUpdatePositions[i];
 
@@ -88,7 +90,7 @@ public class MoleculeSystemGPU : MonoBehaviour
                 moleculeTransforms[i].gameObject.SetActive(true);
             }
         }
-        activeMolecules = new bool[max_num_molecules]; //reset active mol array.
+        activeMolecules = new bool[num_positions_from_hoomd]; //reset active mol array.
 
         float current_graphics_update_time = Time.time;
         float current_graphics_update_frameCount = Time.frameCount;
@@ -130,8 +132,6 @@ public class MoleculeSystemGPU : MonoBehaviour
             }
             mBonds.Add(new Vector3Int(b_data_int[0], b_data_int[1], b_data_int[2]));
         }
-        Debug.Log("num bonds: " + mBonds.Count);
-
     }
 
     private void MolSysProcessBondFrameComplete()
@@ -139,18 +139,62 @@ public class MoleculeSystemGPU : MonoBehaviour
         Debug.Log(mBonds.Count + " bonds read in total.");
 
         cc.setAllBondsRead(true);
+        InitSystem();
+    }
+
+    private void MolSysProcessParticleNames(string msg_string)
+    {
+        string[] _names = msg_string.Split('/');
+        foreach (string n in _names)
+        {
+            string[] name_data = n.Split(',');
+            string pName = "";
+            int idx = 0;
+            foreach (var _d in name_data)
+            {
+                if (idx == 0)
+                {
+                    int tmp = 0;
+                    int.TryParse(_d, out tmp);
+                    if (tmp != num_names_read)
+                    {
+                        Debug.Log("Indexes out of Sync!!!!!!!!!!" + "tmp: " + tmp + " nnr: " + num_names_read);
+                    }
+                } else
+                {
+                    pName = _d;
+                }
+                idx++;
+            }
+            particleNames.Add(pName);
+            num_names_read++;
+        }
+    }
+
+    private void MolSysProcessNamesComplete()
+    {
+        num_positions_from_hoomd = particleNames.Count;
+        num_particles_from_hoomd = particleNames.Count;
+
     }
 
     private void InitSystem()
     {
+        moleculeTransforms = new Transform[num_positions_from_hoomd];
+        frameUpdatePositions = new Vector3[num_positions_from_hoomd];
+        activeMolecules = new bool[num_positions_from_hoomd];
 
+        if (num_particles_from_hoomd == 0)
+        {
+            Debug.Log("Trying to initialize molecule system without particle data being sent to Unity");
+        }
         if (!cc.getAllBondsRead())
         {
             Debug.Log("Trying to initialize molecule system without all bond data being sent to Unity!");
         }
-
+        //instantiate particles
         MaterialPropertyBlock properties = new MaterialPropertyBlock();
-        for (int i = 0; i < max_num_molecules; i++)
+        for (int i = 0; i < num_particles_from_hoomd; i++)
         {
 
             moleculeTransforms[i] = Instantiate(atomPrefab);
@@ -158,22 +202,13 @@ public class MoleculeSystemGPU : MonoBehaviour
 
             moleculeTransforms[i].SetParent(transform);
 
-            // Transform tC = Instantiate(atomPrefab);
-            //Transform tO = Instantiate(atomPrefab);
-
-            //tC.localPosition = Random.insideUnitSphere * init_radius * 0.1f + posOffset;
-            //tO.localPosition = Random.insideUnitSphere * init_radius * 0.1f + posOffset;
-            // tC.localPosition = molParent.transform.position - new Vector3(bond_length / 2f, 0, 0);
-            // tO.localPosition = molParent.transform.position + new Vector3(bond_length / 2f, 0, 0);
-
-            //Transform tBond = Instantiate(bondPrefab);
-            //tBond.localPosition = (tC.localPosition + tO.localPosition) / 2f;
-
-            //tBond.transform.SetParent(molParent.transform);
-            //tC.SetParent(molParent.transform);
-            //tO.SetParent(molParent.transform);
-
-            properties.SetColor("_Color", new Color(1.0f, 0.1f, 0.6f));
+            if (particleNames[i] == "tip3p_H")
+            {
+                properties.SetColor("_Color", Color.gray);
+            } else if (particleNames[i] == "tip3p_O")
+            {
+                properties.SetColor("_Color", Color.red);
+            }
 
             MeshRenderer r = moleculeTransforms[i].GetComponent<MeshRenderer>();
             if (r)
@@ -194,6 +229,57 @@ public class MoleculeSystemGPU : MonoBehaviour
             moleculeTransforms[i].gameObject.SetActive(false);
 
         }
+        //MaterialPropertyBlock bond_properties = new MaterialPropertyBlock();
+        //instantiate bonds
+        int c = 0;
+        for (int i = 0; i < mBonds.Count; i++)
+        {
+            Vector3Int bond = mBonds[i];
+            int a1 = bond.x;
+            int a2 = bond.y;
+            int type = bond.z;
+
+            Transform bond_obj = Instantiate(bondPrefab);
+            bond_obj.SetParent(transform);
+
+            Bond _b = bond_obj.gameObject.GetComponent<Bond>();
+            if (_b == null) { _b = bond_obj.gameObject.AddComponent<Bond>(); }
+
+            _b.a1 = a1;
+            _b.a2 = a2;
+            _b.type = type;
+
+            _b.atom1 = moleculeTransforms[a1].gameObject;
+            _b.atom2 = moleculeTransforms[a2].gameObject;
+
+            Vector3[] atomPositions = new Vector3[2];
+            atomPositions[0] = _b.atom1.transform.position;
+            atomPositions[1] = _b.atom2.transform.position;
+
+            c++;
+
+            properties.SetColor("_Color", Color.black);
+
+            MeshRenderer r = bond_obj.GetComponent<MeshRenderer>();
+            if (r)
+            {
+                r.SetPropertyBlock(properties);
+            }
+            else
+            {
+                for (int ci = 0; ci < bond_obj.childCount; ci++)
+                {
+                    r = bond_obj.GetChild(ci).GetComponent<MeshRenderer>();
+                    if (r)
+                    {
+                        r.SetPropertyBlock(properties);
+                    }
+                }
+            }
+
+        }
+
+        Debug.Log("num bonds pushed to graphics: " + c);
     }
 
     private void gpuSetColor(int idx, Color newColor)
