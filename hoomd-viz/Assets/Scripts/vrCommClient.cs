@@ -160,9 +160,7 @@ public class vrCommClient : MonoBehaviour
                 break;
 
             case ("bonds-update"):
-            {
-                    //var buf = new ByteBuffer(msg[1]);
-                    //var frame = Frame.GetRootAsFrame(buf);
+            {     
                     if (OnNewBondFrame != null)
                         OnNewBondFrame(System.Text.Encoding.UTF8.GetString(msg[1]));
 

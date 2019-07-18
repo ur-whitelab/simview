@@ -11,7 +11,7 @@ ZMQHook::ZMQHook(pybind11::object& pyself, std::shared_ptr<SystemDefinition> sys
 m_pdata(sysdef->getParticleData()), m_bdata(sysdef->getBondData()),
 m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(period), m_N(0) {
 
-    m_socket.connect(uri);
+    m_socket.bind(uri);
       m_exec_conf->msg->notice(2)
       << "Bound ZMQ Socket on " << uri
       << std::endl;
@@ -128,21 +128,22 @@ void ZMQHook::sendInitInfo() {
       //bond/names message size. Since we can't assume bonds.size() != particles.size(), a msg size that works for
       //positions may not work for bonds.
       int m_b_N = 100; 
-
-        // for (int i = 0; i< pN; i++)
+      std::cout << "sending particle names..." << std::endl;
+      size_t pN = m_pdata->getN();
+      std::cout << " num particles: " << pN << std::endl;
+      auto positions = m_pdata->getPositions();
+      size_t ppN = positions.getNumElements();
+      ArrayHandle<Scalar4> positions_data(positions, access_location::host,
+                           access_mode::read);
+  //     std::cout << " num particles PN: " << pN << " ppN: " << ppN << std::endl;
+  //   for (int i = 0; i< pN; i++)
   // {
-  //   std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].x << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
+  //   std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].y << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
   //   std::cout << "pd name: " << m_pdata->getNameByType(positions_data.data[i].w) << std::endl;
 
   //   unsigned int _t = m_pdata->getType(i);
   //   std::cout << " type of particle " << i << ": " << _t << " name(_t): " << m_pdata->getNameByType(_t) << std::endl;
   // }
-
-      std::cout << "sending particle names..." << std::endl;
-      size_t pN = m_pdata->getN();
-      auto positions = m_pdata->getPositions();
-      size_t ppN = positions.getNumElements();
-      std::cout << " num particles PN: " << pN << " ppN: " << ppN << std::endl;
       //index,name
       for (unsigned int i = 0; i < pN; i+= m_b_N)
       {
@@ -180,6 +181,7 @@ void ZMQHook::sendInitInfo() {
       std::vector<int> bond_types;
       std::vector<std::vector<int>> mols_data = findMolecules(bond_pairs, bond_types);
       size_t bN = bond_pairs.size();
+      std::cout << " num bonds: " << bN << std::endl;
 
       for(unsigned int i = 0; i < bN; i += m_b_N)
       {
@@ -217,11 +219,11 @@ std::vector<std::vector<int>> ZMQHook::findMolecules(std::vector<std::pair<int,i
 
   size_t pN = m_pdata->getN();
 
-  std::cout << " pN: " << pN << std::endl;
+  //std::cout << " pN: " << pN << std::endl;
 
   const unsigned int num_bonds = (unsigned int)m_bdata->getN();
 
-   std::cout << " num_bonds: " << num_bonds << std::endl;
+   //std::cout << " num_bonds: " << num_bonds << std::endl;
 
   int pi = 0;
 
@@ -233,7 +235,7 @@ std::vector<std::vector<int>> ZMQHook::findMolecules(std::vector<std::pair<int,i
   std::unordered_set<int> unmapped;
   for (int i = 0; i < pN; i++) { unmapped.insert(i); }
 
-  std::cout << " num bonds: " << num_bonds << " pN: " << pN << std::endl;
+//  std::cout << " num bonds: " << num_bonds << " pN: " << pN << std::endl;
 
   //put bonds in a copy for performance purposes
   for (unsigned int i = 0; i < num_bonds; i++)

@@ -6,7 +6,7 @@ import math, numpy as np, gsd, mbuild as mb, pickle
 import hoomd_ff
 
 struct_dir = '/Users/sebastianjakymiw/Documents/Rochester/Work/run_scattering/'
-N = 1000
+N = 600
 water = H2O()
 water.name = 'Water'
 water.label_rigid_bodies()
@@ -14,6 +14,7 @@ sys = mb.fill_box(compound=water, n_compounds = N, edge=0.25, density = 997.13)
 sys.translate(-sys.pos)
 boxd = sys.periodicity[0] #nm
 box = mb.Box(mins=3 * [-boxd / 2], maxs=3 * [boxd / 2])
+
 sys.save(struct_dir + 'water.gsd', overwrite=True)
 print('box size is:{}'.format(box))
 
@@ -27,7 +28,7 @@ frame = g[0]
 c = hoomd.context.initialize('')
 system = hoomd.init.read_gsd(filename = struct_dir + 'water.gsd')
 
-nlist = hoomd.md.nlist.cell(r_buff=0.001, check_period=1)
+nlist = hoomd.md.nlist.cell()
 hoomd_ff.pair_coeffs(frame, param_sys, nlist)
 
 #set-up bonds
@@ -49,22 +50,22 @@ group_all = hoomd.group.all()
 #time 1 = 48.9 fs
 #emin
 kT = 1.9872 / 1000
-fire = hoomd.md.integrate.mode_minimize_fire(dt=0.5 / 48.9, ftol=1e-4, Etol=1e-8)
-nve = hoomd.md.integrate.nve(group=group_all)
+#fire = hoomd.md.integrate.mode_minimize_fire(dt=0.5 / 48.9, ftol=1e-4, Etol=1e-8)
+#nve = hoomd.md.integrate.nve(group=group_all)
 #init_dump = hoomd.dump.gsd(filename= struct_dir + 'init.gsd', period=1, group=group_all, phase=0, overwrite=True)
 
 state_vars = ['temperature', 'volume', 'num_particles', 'pressure', 'lx', 'ly', 'lz']
 log = hoomd.analyze.log(filename=None, quantities=state_vars, period=1)
 
-for i in range(1):
-    if not(fire.has_converged()):
-        print("fire not converged")
-        hoomd.run(100)
+# for i in range(1):
+#     if not(fire.has_converged()):
+#         print("fire not converged")
+#         hoomd.run(100)
 
 #bonds are constrained, so can use 2 ps
 hoomd.md.integrate.mode_standard(dt=2 / 48.9)
 
-nve.disable()
+#nve.disable()
 #init_dump.disable()
 
 
@@ -105,7 +106,7 @@ def set_callback(**data):
             hoomd.update.box_resize(Lx=scale * log.query('lx') , Ly=scale * log.query('ly'), Lz=scale * log.query('lz'), period=None, scale_particles=True)
         
 #For a 3d lattice, a message size of 400 (switched from 288) ended the allocation errors.
-hoomd.hzmq.hzmq('tcp://localhost:5570', period=50, message_size=375, state_callback=callback, set_state_callback=set_callback)
+hoomd.hzmq.hzmq('tcp://*:5570', period=10, message_size=300, state_callback=callback, set_state_callback=set_callback)
 c.sorter.disable()
 for i in range(10000):
     hoomd.run(1e3)

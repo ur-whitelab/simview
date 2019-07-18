@@ -963,7 +963,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1222386210}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.6, z: 3.14}
+  m_LocalPosition: {x: 0, y: 1.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1399384677}
@@ -1263,7 +1263,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2137394734}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.313226e-10, y: 0, z: -0.0000000018626451}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1285,8 +1285,8 @@ MonoBehaviour:
   bondPrefab: {fileID: 7565268235312117650, guid: 3ab7653bc77534adba126ab0d17e9aa2,
     type: 3}
   cc: {fileID: 764097286}
-  posOffset: {x: 0, y: 0, z: 0}
-  scaleF: 0.1
+  posOffset: {x: 0, y: 2.87, z: 0}
+  scaleF: 0.35
 --- !u!1001 &2140264275
 PrefabInstance:
   m_ObjectHideFlags: 0

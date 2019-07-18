@@ -11,12 +11,7 @@ public class Bond : MonoBehaviour
     public GameObject atom1;
     public GameObject atom2;
 
-    Vector3 base_scale = new Vector3(0.02f, 0.02f, 0.02f);
-
-    void Start()
-    {
-            
-    }
+    public float atom_scale = 0.05f;
 
     // Update is called once per frame
     void Update()
@@ -25,9 +20,18 @@ public class Bond : MonoBehaviour
         {
             //transform.position = 0.5f*(atom2.transform.position + atom1.transform.position);
             //transform.LookAt(atom2.transform);
-            float width = atom1.transform.localScale.x / 2.5f;
+
+            float width = atom1.transform.localScale.x / 5.0f;
             Vector3 pos_delta = atom2.transform.position - atom1.transform.position;
             Vector3 scale = new Vector3(width, pos_delta.magnitude / 2.0f, width);
+            if (scale.magnitude >= atom_scale*20.0f)
+            {
+                GetComponent<MeshRenderer>().enabled = false;
+            }
+            else
+            {
+                GetComponent<MeshRenderer>().enabled = true;
+            }
             transform.position = atom1.transform.position + (pos_delta / 2.0f);
             transform.up = pos_delta;
             transform.localScale = scale;

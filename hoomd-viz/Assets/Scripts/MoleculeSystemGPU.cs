@@ -37,7 +37,10 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private List<string> particleNames;
     private int num_names_read = 0;
-    
+
+    //simulation viz box dimensions.
+    private Vector3 max_particle_position;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -55,7 +58,7 @@ public class MoleculeSystemGPU : MonoBehaviour
         mBonds = new List<Vector3Int>();
         particleNames = new List<string>();
 
-        posOffset = new Vector3(0, 2.2f, 3.14f);
+       // posOffset = new Vector3(0, 2.2f, 3.14f);
 
         last_graphics_update_time = 0.0f;
         last_graphics_update_frameCount = 0;
@@ -70,7 +73,12 @@ public class MoleculeSystemGPU : MonoBehaviour
             frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X * scaleF,
                                                   frame.Positions(i - frame.I).Value.W * scaleF,
                                                   frame.Positions(i - frame.I).Value.Y * scaleF) + posOffset;
+            //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.W,
+            //                                      frame.Positions(i - frame.I).Value.X,
+            //                                      frame.Positions(i - frame.I).Value.Y);
+            //Debug.Log("idx: " + i + "pos: " + frameUpdatePositions[i]);
             activeMolecules[i] = true;
+
         }
     }
 
@@ -82,6 +90,12 @@ public class MoleculeSystemGPU : MonoBehaviour
         {
             moleculeTransforms[i].position = frameUpdatePositions[i];
 
+            if (max_particle_position.magnitude < frameUpdatePositions[i].magnitude)
+            {
+                max_particle_position = frameUpdatePositions[i];
+                Debug.Log("max_particle_position mag: " + max_particle_position.magnitude);
+            }
+
             if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
             {
                 moleculeTransforms[i].gameObject.SetActive(false);
@@ -90,6 +104,7 @@ public class MoleculeSystemGPU : MonoBehaviour
                 moleculeTransforms[i].gameObject.SetActive(true);
             }
         }
+
         activeMolecules = new bool[num_positions_from_hoomd]; //reset active mol array.
 
         float current_graphics_update_time = Time.time;
@@ -199,16 +214,67 @@ public class MoleculeSystemGPU : MonoBehaviour
 
             moleculeTransforms[i] = Instantiate(atomPrefab);
             moleculeTransforms[i].position = transform.position;
-
+       
             moleculeTransforms[i].SetParent(transform);
 
-            if (particleNames[i] == "tip3p_H")
+            if (i == 999)
             {
-                properties.SetColor("_Color", Color.gray);
-            } else if (particleNames[i] == "tip3p_O")
-            {
-                properties.SetColor("_Color", Color.red);
+                Debug.Log(" part 999 name: " + particleNames[i]);
             }
+
+            switch (particleNames[i])
+            {
+                case ("tip3p_H"):
+                    if (i == 999)
+                    {
+                        Debug.Log(" part 999 name: " + particleNames[i] + "hy");
+                    }
+                    properties.SetColor("_Color", Color.gray);
+                    break;
+
+                case ("tip3p_O"):
+                    {
+                        if (i == 999)
+                        {
+                            Debug.Log(" part 999 name: " + particleNames[i] + " oxy ");
+                        }
+                        properties.SetColor("_Color", Color.red);
+                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+                        break;
+                    }
+                    
+                default:
+                    {
+                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+                        properties.SetColor("_Color", Color.red);
+                        //I have no idea why but sometimes Oxygen atoms, even though their name is tip3p_O, don't trip either switch.
+                        break;
+                    }
+                    
+            }
+               
+
+            //if (particleNames[i] == "tip3p_H")
+            //{
+            //    if (i == 999)
+            //    {
+            //        Debug.Log(" part 999 name: " + particleNames[i] + "hy");
+            //    }
+            //    properties.SetColor("_Color", Color.gray);
+            //} else if (particleNames[i] == "tip3p_O")
+            //{
+            //    if (i == 999)
+            //    {
+            //        Debug.Log(" part 999 name: " + particleNames[i] + " oxy ");
+            //    }
+            //    properties.SetColor("_Color", Color.red);
+            //    Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+            //    moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+            //}
+            
+
 
             MeshRenderer r = moleculeTransforms[i].GetComponent<MeshRenderer>();
             if (r)
@@ -244,6 +310,7 @@ public class MoleculeSystemGPU : MonoBehaviour
 
             Bond _b = bond_obj.gameObject.GetComponent<Bond>();
             if (_b == null) { _b = bond_obj.gameObject.AddComponent<Bond>(); }
+            //_b.msys = GetComponent<MoleculeSystemGPU>();
 
             _b.a1 = a1;
             _b.a2 = a2;
@@ -258,7 +325,7 @@ public class MoleculeSystemGPU : MonoBehaviour
 
             c++;
 
-            properties.SetColor("_Color", Color.black);
+            properties.SetColor("_Color", Color.white);
 
             MeshRenderer r = bond_obj.GetComponent<MeshRenderer>();
             if (r)
@@ -316,5 +383,10 @@ public class MoleculeSystemGPU : MonoBehaviour
     {
         scaleF += scaleDelta;
         scaleF = Mathf.Clamp(scaleF, 0.02f, 0.1f);
+    }
+
+    public Vector3 getMaxParticlePos()
+    {
+        return max_particle_position;
     }
 }
