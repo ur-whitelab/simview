@@ -19,6 +19,7 @@ TagManager:
   - X
   - Club
   - HBallManager
+  - Bond
   layers:
   - Default
   - TransparentFX

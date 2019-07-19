@@ -53,6 +53,8 @@ public class MoleculeSystemGPU : MonoBehaviour
         cc.OnNewName += MolSysProcessParticleNames;
         cc.OnCompleteNames += MolSysProcessNamesComplete;
 
+        cc.OnHoomdStartup += MolSysPrepForNewHoomdSession;
+
         cc.setAllBondsRead(false);
 
         mBonds = new List<Vector3Int>();
@@ -193,8 +195,35 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     }
 
+    private void MolSysPrepForNewHoomdSession()
+    {
+        particleNames.Clear();
+
+        mBonds.Clear();
+        cc.setAllBondsRead(false);
+
+        num_names_read = 0;
+        num_positions_from_hoomd = 0;
+        num_particles_from_hoomd = 0;
+
+    }
+
     private void InitSystem()
     {
+        if (moleculeTransforms != null)
+        {
+            for (int i = 0; i < moleculeTransforms.Length; i++)
+            {
+                Destroy(moleculeTransforms[i].gameObject);
+            }
+        }
+
+        GameObject[] bonds_to_destroy = GameObject.FindGameObjectsWithTag("Bond");
+        for (int i = 0; i < bonds_to_destroy.Length; i++)
+        {
+            Destroy(bonds_to_destroy[i]);
+        }
+
         moleculeTransforms = new Transform[num_positions_from_hoomd];
         frameUpdatePositions = new Vector3[num_positions_from_hoomd];
         activeMolecules = new bool[num_positions_from_hoomd];

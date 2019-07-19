@@ -36,6 +36,9 @@ public class vrCommClient : MonoBehaviour
     public delegate void NewParticleNameAction(string msg_string);
     public delegate void CompleteParicleNameAction();
 
+    public event HoomdStartupAction OnHoomdStartup;
+    public delegate void HoomdStartupAction();
+
 
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
@@ -89,20 +92,19 @@ public class vrCommClient : MonoBehaviour
     {
         List<byte[]> msg = null;
 
-        bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-        //bool received = false;
-
-        //if (!all_bonds_read)
-        //{
-        //    //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
-        //    //Either we'll get them or we will get them eventually once Hoomd starts for the first time.
-        //    received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-        //}
-        //else
-        //{
-        //    //normal execution of program.
-        //    received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
-        //}
+        //bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        bool received;
+        if (!all_bonds_read)
+        {
+            //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
+            //Either we'll get them or we will get them eventually once Hoomd starts for the first time.
+            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        }
+        else
+        {
+            //normal execution of program.
+            received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        }
 
         if (msg == null || !received)
         {
@@ -117,6 +119,7 @@ public class vrCommClient : MonoBehaviour
         }
 
         string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
+      //  Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
 
         switch (msgType)
         {
@@ -180,6 +183,10 @@ public class vrCommClient : MonoBehaviour
             case ("names-complete"):
                 if (OnCompleteNames != null)
                     OnCompleteNames();
+                break;
+            case ("hoomd-startup"):
+                if (OnHoomdStartup != null)
+                    OnHoomdStartup();
                 break;
 
             default:
