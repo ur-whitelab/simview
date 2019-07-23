@@ -8,6 +8,8 @@ public class SceneManager : MonoBehaviour
 {
     [SerializeField]
     private MoleculeSystemGPU molSystem;
+    [SerializeField]
+    private vrCommClient vrCC;
 
     private GvrControllerInputDevice gvrController;
 
@@ -60,6 +62,8 @@ public class SceneManager : MonoBehaviour
             molSystem.incrementScaleF(-0.01f);
 
         }
+
+        
 
     }
 }

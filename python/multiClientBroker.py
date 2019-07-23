@@ -15,6 +15,9 @@ publisher.bind('tcp://*:5559')
 backend = context.socket(zmq.PAIR)#hoomd
 backend.connect('tcp://localhost:5570')
 
+backend_spoke = context.socket(zmq.PAIR)#hoomd manager
+backend_spoke.connect('tcp://localhost:5558')
+
 poller = zmq.Poller()
 poller.register(frontend, zmq.POLLIN)
 poller.register(backend, zmq.POLLIN)
@@ -77,7 +80,6 @@ while True:
             #client initialized after hoomd so send it the bond data.
             if hoomd_initialized:
                 send_init_data_to_client(client_id)
-
         elif msg_type == 'last-msg':
             client_dict[client_id] = False
             #client_ids.remove(client_id)
@@ -86,6 +88,8 @@ while True:
         elif msg_type == 'simulation-update':
             backend.send_multipart([msg_type, message[2]])
             expecting_state_update = False #Unity obliged Hoomd's state-update request
+        elif msg_type == 'hoomd-instructions':
+            backend_spoke.send_multipart([msg_type, message[2]])
 
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
         if expecting_state_update:

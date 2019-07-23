@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using FlatBuffers;
 using HZMsg;
+using UnityEngine.UI;
 //using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NetMQ;
@@ -17,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://localhost:";
+    public string BROKER_IP_ADDRESS = "tcp://10.4.3.201:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -39,7 +40,10 @@ public class vrCommClient : MonoBehaviour
     public event HoomdStartupAction OnHoomdStartup;
     public delegate void HoomdStartupAction();
 
-
+    [SerializeField]
+    private GameObject ipCanvas;
+    [SerializeField]
+    private InputField ipInputField;
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
 
@@ -65,21 +69,13 @@ public class vrCommClient : MonoBehaviour
         ForceDotNet.Force();
 
         //BROKER_IP_ADDRESS = PlayerPrefs.GetString("IPAddress", "No-Value");
+        //if (BROKER_IP_ADDRESS == "No-Value")
+        //{
+        //    BROKER_IP_ADDRESS = "tcp://localhost:";
+        //}
 
-        // set-up sockets
-        string upstream_port_address = BROKER_IP_ADDRESS + "5556";
-        string downstream_port_address = BROKER_IP_ADDRESS + "5559";
+        zmqStartUp();
 
-        FrameClient = new DealerSocket();
-        FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);
-        FrameClient.Connect(upstream_port_address);
-        Debug.Log("Dealer Socket connected on " + upstream_port_address);
-        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("first-msg"));
-
-        SubClient = new SubscriberSocket();
-        SubClient.Connect(downstream_port_address);
-        SubClient.SubscribeToAnyTopic();
-        Debug.Log("Subscriber Socket connected on " + downstream_port_address);
     }
 
     public void SetMessage(Dictionary<string, string> msg)
@@ -205,6 +201,57 @@ public class vrCommClient : MonoBehaviour
         return all_bonds_read;
     }
 
+    public void startHoomdLJSim()
+    {
+
+    }
+
+    public void startHoomdWaterSim()
+    {
+
+    }
+
+    public void enableIPMenu()
+    {
+        ipCanvas.SetActive(true);
+    }
+
+    public void newIpAddress()
+    {
+        ipCanvas.SetActive(false);
+        zmqCleanUp();
+        BROKER_IP_ADDRESS = ipInputField.text;
+        zmqStartUp();
+        Debug.Log("menu done");
+    }
+
+    private void zmqStartUp()
+    {
+        // set-up sockets
+        string upstream_port_address = BROKER_IP_ADDRESS + "5556";
+        string downstream_port_address = BROKER_IP_ADDRESS + "5559";
+
+        FrameClient = new DealerSocket();
+        FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);
+        FrameClient.Connect(upstream_port_address);
+        Debug.Log("Dealer Socket connected on " + upstream_port_address);
+        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("first-msg"));
+
+        SubClient = new SubscriberSocket();
+        SubClient.Connect(downstream_port_address);
+        SubClient.SubscribeToAnyTopic();
+        Debug.Log("Subscriber Socket connected on " + downstream_port_address);
+    }
+
+    private void zmqCleanUp()
+    {
+        FrameClient.Close();
+        FrameClient.Dispose();
+
+        SubClient.Close();
+        SubClient.Dispose();
+    }
+
     //#if UNITY_ANDROID
 
     //    private void OnApplicationPause(bool pause)
@@ -223,12 +270,7 @@ public class vrCommClient : MonoBehaviour
     private void OnApplicationQuit()
     {
         FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
-
-        FrameClient.Close();
-        FrameClient.Dispose();
-
-        SubClient.Close();
-        SubClient.Dispose();
+        zmqCleanUp();   
     }
 }
 
