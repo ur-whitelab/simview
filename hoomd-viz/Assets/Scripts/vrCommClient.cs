@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://10.4.3.201:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -213,7 +213,7 @@ public class vrCommClient : MonoBehaviour
 
     public void enableIPMenu()
     {
-        ipCanvas.SetActive(true);
+        ipCanvas.SetActive( !ipCanvas.activeInHierarchy );
     }
 
     public void newIpAddress()
@@ -223,6 +223,7 @@ public class vrCommClient : MonoBehaviour
         BROKER_IP_ADDRESS = ipInputField.text;
         zmqStartUp();
         Debug.Log("menu done");
+        
     }
 
     private void zmqStartUp()
@@ -241,6 +242,8 @@ public class vrCommClient : MonoBehaviour
         SubClient.Connect(downstream_port_address);
         SubClient.SubscribeToAnyTopic();
         Debug.Log("Subscriber Socket connected on " + downstream_port_address);
+        PlayerPrefs.SetString("IPAddress", BROKER_IP_ADDRESS);
+
     }
 
     private void zmqCleanUp()

@@ -1,32 +1,32 @@
 import hoomd
 import hoomd.md
 import hoomd.hzmq
-from mbuild.lib.moieties import H2O
+from mbuild.lib.moieties import CH3
 import math, numpy as np, gsd, mbuild as mb, pickle
 import hoomd_ff
 
 struct_dir = '/Users/sebastianjakymiw/Documents/Rochester/Work/run_scattering/'
 N = 600
-water = H2O()
-water.name = 'Water'
-water.label_rigid_bodies()
-sys = mb.fill_box(compound=water, n_compounds = N, edge=0.25, density = 997.13)
+ch3 = CH3()
+ch3.name = 'Methane'
+ch3.label_rigid_bodies()
+sys = mb.fill_box(compound=ch3, n_compounds = N, edge=0.25, density = 997.13)
 sys.translate(-sys.pos)
 boxd = sys.periodicity[0] #nm
 box = mb.Box(mins=3 * [-boxd / 2], maxs=3 * [boxd / 2])
 
-sys.save(struct_dir + 'water.gsd', overwrite=True)
+sys.save(struct_dir + 'ch3.gsd', overwrite=True)
 print('box size is:{}'.format(box))
 
 param_sys, kwargs = hoomd_ff.prepare_hoomd(sys, forcefield_files=['oplsaa.xml'], forcefield_debug=False, box=box)
-mb.formats.gsdwriter.write_gsd(param_sys, struct_dir + 'water.gsd', shift_coords=True, **kwargs)
+mb.formats.gsdwriter.write_gsd(param_sys, struct_dir + 'ch3.gsd', shift_coords=True, **kwargs)
 
 #Need to edit to add special pairs
-g = gsd.hoomd.open(struct_dir + 'water.gsd')
+g = gsd.hoomd.open(struct_dir + 'ch3.gsd')
 frame = g[0]
 
 c = hoomd.context.initialize('')
-system = hoomd.init.read_gsd(filename = struct_dir + 'water.gsd')
+system = hoomd.init.read_gsd(filename = struct_dir + 'ch3.gsd')
 
 nlist = hoomd.md.nlist.cell()
 hoomd_ff.pair_coeffs(frame, param_sys, nlist)
@@ -72,8 +72,8 @@ hoomd.md.integrate.mode_standard(dt=2 / 48.9)
 #Now NVT
 hoomd.md.integrate.mode_standard(dt=0.005)
 #nvt_dump = hoomd.dump.gsd(filename= struct_dir + 'trajectory.gsd', period=50, group=group_all, phase=0, overwrite=True)
-nvt = hoomd.md.integrate.nvt(group=group_all, kT=298 * kT, tau=100 / 48.9)
-nvt.randomize_velocities(0)
+npt = hoomd.md.integrate.npt(group=group_all, kT=298 * kT, tau=100 / 48.9, P=1.0, tauP=2.0)
+npt.randomize_velocities(0)
 
 #nl = hoomd.md.nlist.cell()
 #lj = hoomd.md.pair.lj(r_cut=2.5, nlist=nl)
@@ -93,10 +93,10 @@ scale = 1
 def set_callback(**data):
     if 'temperature' in data:
         print('temperature', data['temperature'])
-        #npt.set_params(kT = max(0.001,float(data['temperature'])))
+        npt.set_params(kT = max(0.001,float(data['temperature'])))
     if 'pressure' in data:
         print('pressure', data['pressure'])
-        #npt.set_params(P = float(data['pressure']))
+        npt.set_params(P = float(data['pressure']))
     if 'box' in data:
         scale = float(data['box'])
         print('Resizing to', scale * log.query('lx') , ' x ', scale * log.query('lz'))
@@ -109,4 +109,5 @@ def set_callback(**data):
 hoomd.hzmq.hzmq('tcp://*:5570', period=10, message_size=300, state_callback=callback, set_state_callback=set_callback)
 c.sorter.disable()
 for i in range(10000):
+    print("run number " + str(i))
     hoomd.run(1e3)

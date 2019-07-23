@@ -366,6 +366,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   molSystem: {fileID: 2137394736}
   vrCC: {fileID: 764097286}
+  simInterface: {fileID: 1457201193}
 --- !u!1 &214484822
 GameObject:
   m_ObjectHideFlags: 0
@@ -782,6 +783,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   swipeMenu: {fileID: 2025837039}
   vrCC: {fileID: 764097286}
+  simInterface: {fileID: 1457201193}
 --- !u!212 &511457265
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -923,7 +925,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://10.4.3.201:'
+  BROKER_IP_ADDRESS: 'tcp://localhost:'
   ipCanvas: {fileID: 1925686908}
   ipInputField: {fileID: 58447839}
 --- !u!4 &764097287
