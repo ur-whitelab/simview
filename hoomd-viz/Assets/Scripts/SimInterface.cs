@@ -13,7 +13,7 @@ public class SimInterface : MonoBehaviour
     public Text PressureText;
 
     private float setTemperature = 0.15f;
-    private float setPressure = 0.0f;
+    private float setPressure = 1.0f;
     private float scale = 1.0f;
 
     private vrCommClient cc;
@@ -87,6 +87,28 @@ public class SimInterface : MonoBehaviour
         {
             scale = 0.92f;
         }
+    }
+
+    public void incrementPressure()
+    {
+        setPressure += 0.001f;
+    }
+    public void decrementPressure()
+    {
+        setPressure -= 0.001f;
+    }
+    public void incrementTemperature()
+    {
+        setTemperature += 0.01f;
+    }
+    public void decrementTemperature()
+    {
+        setTemperature -= 0.01f;
+    }
+    public void resetStateVars()
+    {
+        setPressure = 1.0f;
+        setTemperature = 0.15f;
     }
 
 

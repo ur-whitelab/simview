@@ -19,7 +19,8 @@ if (len(sys.argv)== 1):
 else:
     sim_type_list = sys.argv[1:]
 
-active_channel = 1
+active_channel = 0
+next_active_channel = 0
 channels = []
 
 context = zmq.Context()
@@ -30,16 +31,23 @@ frontend.bind('tcp://*:5556')
 publisher = context.socket(zmq.PUB)#unity downstream
 publisher.bind('tcp://*:5559')
 
+instructor = context.socket(zmq.PAIR)#instructor scene
+instructor.bind('tcp://*:5570')
+
+frame_count = 0
+
 # backend = context.socket(zmq.PAIR)#hoomd
 # backend.connect('tcp://localhost:5570')
 
 poller = zmq.Poller()
 poller.register(frontend, zmq.POLLIN)
+poller.register(instructor, zmq.POLLIN)
 #poller.register(backend, zmq.POLLIN)
 
 sim_ports = {
     "h2o": "5550",
-    "lj": "5551"
+    "lj": "5551",
+    "lj2d": "5552"
 }
 
 for i in range(0, len(sim_type_list)):
@@ -68,20 +76,11 @@ expecting_state_update = False
 
 default_state_update = {
     "temperature": "0.15",
-    "pressure": "0",
+    "pressure": "1.0",
     "box": "1"
 }
 default_state_update = json.dumps(default_state_update)
-last_state_update_msg = ["state-update", default_state_update]
-
-#all_bond_messages = []
-#all_particle_name_messages = []
-#hoomd_initialized = False
-
-# def reset_init_data():
-#     del all_particle_name_messages[:]
-#     del all_bond_messages[:]
-#     hoomd_initialized = False
+#last_state_update_msg = ["state-update", default_state_update]
 
 def send_init_data_to_client(_id):
 
@@ -103,6 +102,7 @@ def send_init_data_to_client(_id):
         frontend.send_multipart(msg)
 
     client_dict[_id].active_channel = active_channel
+    client_dict[_id].initialized = True
 
     frontend.send_multipart([_id, "bonds-complete"])
 
@@ -121,6 +121,7 @@ while True:
             message = channel_socket.recv_multipart()
             msg_type = message[0]
             print(str(channels[i].simulation_type) + " --- " + str(msg_type))
+
             if msg_type == 'names-update':
                 channels[i].particle_name_messages.append(message)
             elif msg_type == 'bonds-update':
@@ -153,16 +154,15 @@ while True:
         client_id = message[0]
         msg_type = message[1]
         
+        # if next_active_channel != active_channel:
+        #     msg_type = 'hoomd-startup'
+
         if msg_type == 'first-msg':
             uc = UnityClient(client_id, active_channel)
             client_dict[client_id] = uc
             if (channels[active_channel].initialized):
-                print("ac init")
                 send_init_data_to_client(client_id)
                 client_dict[client_id].initialized = True
-            else:
-                print("ac not init")
-                client_dict[client_id].initialized = False
             
             print(str(len(client_dict)) + " client(s) connected")
 
@@ -173,13 +173,56 @@ while True:
 
         elif msg_type == 'simulation-update':
             channels[active_channel].socket.send_multipart([msg_type, message[2]])
+            print("sim up in sim up: " + str(message[2]))
             #backend.send_multipart([msg_type, message[2]])
             expecting_state_update = False #Unity obliged Hoomd's state-update request
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
         if expecting_state_update:
-            channels[active_channel].socket.send_multipart(default_state_update)
+            channels[active_channel].socket.send_multipart(['simulation-update', default_state_update])
             #backend.send_multipart(default_state_update)
             expecting_state_update = False
+
+    if socks.get(instructor) == zmq.POLLIN:
+        message = instructor.recv_multipart()
+        msg_id = message[0]
+        if msg_id == "ac-change":
+            active_channel = int(message[1])
+            publisher.send_multipart(["hoomd-startup","tmp"])
+            channels[active_channel].socket.send_multipart(['simulation-update', default_state_update])
+
+    #send debug info to the instructor.
+    if frame_count % 10 == 0:
+        string_of_simulations_list = ""
+        for i in range(0, len(channels)):
+            c_type = channels[i].simulation_type
+            c_ip = channels[i].ip_address
+            c_init = channels[i].initialized
+            c_active = (i == active_channel)
+            #idx, type, ip, initialized?, active?
+            str_builder = ""
+            if i == 0:
+                str_builder = str(i) + "," + str(c_type) + "," + str(c_ip) + "," + str(c_init) + "," + str(c_active)
+            else:
+                str_builder = "|" + str(i) + "," + str(c_type) + "," + str(c_ip) + "," + str(c_init) + "," + str(c_active)
+            string_of_simulations_list += str_builder
+        string_of_clients_dict = ""
+        _idx = 0
+        for client_id in client_dict:
+            #id, connected
+            _uc = client_dict[client_id]
+            if _idx == 0:
+                str_builder = str(client_id) + "," + str(_uc.initialized)
+            else:
+                str_builder = "|" + str(client_id) + "," + str(_uc.initialized)
+            string_of_clients_dict += str_builder
+            _idx += 1
+        full_message_string = string_of_simulations_list + "_" + string_of_clients_dict
+        instructor.send_multipart(['debug-string', full_message_string])
+
+    frame_count += 1
+
+
+
 
 
 

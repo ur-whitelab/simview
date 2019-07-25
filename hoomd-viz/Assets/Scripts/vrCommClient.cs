@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://localhost:";
+    public string BROKER_IP_ADDRESS = "tcp://192.168.1.168:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -57,6 +57,9 @@ public class vrCommClient : MonoBehaviour
     private int last_msg_not_rec_fc = 0;
 
     private bool all_bonds_read = false;
+
+    bool zmq_initialized = false;
+
 
     // Start is called before the first frame update
     void Start()
@@ -115,7 +118,7 @@ public class vrCommClient : MonoBehaviour
         }
 
         string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
-      //  Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
+        Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
 
         switch (msgType)
         {
@@ -152,7 +155,7 @@ public class vrCommClient : MonoBehaviour
                 var sendMsg = new NetMQMessage();
                 sendMsg.Append("simulation-update");
                 sendMsg.Append(sendMsgStr);
-                FrameClient.SendMultipartMessage(sendMsg);
+                FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
 
                 sendMsgStr = "{}";
 
@@ -162,7 +165,6 @@ public class vrCommClient : MonoBehaviour
             {     
                     if (OnNewBondFrame != null)
                         OnNewBondFrame(System.Text.Encoding.UTF8.GetString(msg[1]));
-
                     break;
             }
                 
@@ -253,22 +255,18 @@ public class vrCommClient : MonoBehaviour
 
         SubClient.Close();
         SubClient.Dispose();
+
+        zmq_initialized = false;
     }
+#if UNITY_ANDROID
 
-    //#if UNITY_ANDROID
+        private void OnApplicationPause(bool pause)
+        {
+            FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+            zmqCleanUp();  
+        }
 
-    //    private void OnApplicationPause(bool pause)
-    //    {
-    //        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
-
-    //        FrameClient.Close();
-    //        FrameClient.Dispose();
-
-    //        SubClient.Close();
-    //        SubClient.Dispose();
-    //    }
-
-    //#endif
+#endif
 
     private void OnApplicationQuit()
     {

@@ -175,7 +175,7 @@ public class MoleculeSystemGPU : MonoBehaviour
                     int.TryParse(_d, out tmp);
                     if (tmp != num_names_read)
                     {
-                        Debug.Log("Indexes out of Sync!!!!!!!!!!" + "tmp: " + tmp + " nnr: " + num_names_read);
+                        Debug.Log("Indexes out of Sync!" + "tmp: " + tmp + " nnr: " + num_names_read);
                     }
                 } else
                 {
@@ -197,6 +197,7 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private void MolSysPrepForNewHoomdSession()
     {
+        Debug.Log("prep for new channel");
         particleNames.Clear();
 
         mBonds.Clear();
@@ -246,11 +247,6 @@ public class MoleculeSystemGPU : MonoBehaviour
        
             moleculeTransforms[i].SetParent(transform);
 
-            if (i == 999)
-            {
-                Debug.Log(" part 999 name: " + particleNames[i]);
-            }
-
             switch (particleNames[i])
             {
                 case ("tip3p_H"):
@@ -276,34 +272,12 @@ public class MoleculeSystemGPU : MonoBehaviour
                 default:
                     {
                         Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;
                         properties.SetColor("_Color", Color.red);
-                        //I have no idea why but sometimes Oxygen atoms, even though their name is tip3p_O, don't trip either switch.
                         break;
                     }
                     
             }
-               
-
-            //if (particleNames[i] == "tip3p_H")
-            //{
-            //    if (i == 999)
-            //    {
-            //        Debug.Log(" part 999 name: " + particleNames[i] + "hy");
-            //    }
-            //    properties.SetColor("_Color", Color.gray);
-            //} else if (particleNames[i] == "tip3p_O")
-            //{
-            //    if (i == 999)
-            //    {
-            //        Debug.Log(" part 999 name: " + particleNames[i] + " oxy ");
-            //    }
-            //    properties.SetColor("_Color", Color.red);
-            //    Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-            //    moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
-            //}
-            
-
 
             MeshRenderer r = moleculeTransforms[i].GetComponent<MeshRenderer>();
             if (r)
@@ -413,6 +387,11 @@ public class MoleculeSystemGPU : MonoBehaviour
         scaleF += scaleDelta;
         scaleF = Mathf.Clamp(scaleF, 0.02f, 0.1f);
     }
+
+    public void setScaleF(float s)
+	{
+		scaleF = s;
+	}
 
     public Vector3 getMaxParticlePos()
     {

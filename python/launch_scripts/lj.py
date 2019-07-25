@@ -105,7 +105,7 @@ def set_callback(**data):
             hoomd.update.box_resize(Lx=scale * log.query('lx') , Ly=scale * log.query('ly'), Lz=scale * log.query('lz'), period=None, scale_particles=True)
         
 #For a 3d lattice, a message size of 400 (switched from 288) ended the allocation errors.
-hoomd.hzmq.hzmq('tcp://*:5570', period=50, message_size=400, state_callback=callback, set_state_callback=set_callback)
+hoomd.hzmq.hzmq('tcp://*:5551', period=50, message_size=400, state_callback=callback, set_state_callback=set_callback)
 c.sorter.disable()
 for i in range(10000):
     hoomd.run(1e3)
