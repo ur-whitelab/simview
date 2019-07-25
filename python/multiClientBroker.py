@@ -19,7 +19,7 @@ if (len(sys.argv)== 1):
 else:
     sim_type_list = sys.argv[1:]
 
-active_channel = 0
+active_channel = 1
 channels = []
 
 context = zmq.Context()
@@ -39,7 +39,7 @@ poller.register(frontend, zmq.POLLIN)
 
 sim_ports = {
     "h2o": "5550",
-    "ch3": "5551"
+    "lj": "5551"
 }
 
 for i in range(0, len(sim_type_list)):
@@ -54,7 +54,7 @@ for i in range(0, len(sim_type_list)):
     sc = SimulationChannel(context, sim_ip, sc_socket, sim_type_list[i])
     channels.append(sc)
 
-backend = channels[active_channel].socket
+#backend = channels[active_channel].socket
 
 for i in range (0, len(channels)):
     if (i == active_channel):
@@ -115,87 +115,30 @@ initialized_simulations = 0
 while True:
     socks = dict(poller.poll())
 
-    if initialized_simulations != len(channels):
-        for i in range(0, len(channels)):
-            channel_socket = channels[i].socket
-            if socks.get(channel_socket) == zmq.POLLIN:
-                message = channel_socket.recv_multipart()
-                msg_type = message[0]
-                print(str(channels[i].simulation_type) + " --- " + str(msg_type))
-                if msg_type == 'names-update':
-                    channels[i].particle_name_messages.append(message)
-                    print("num of pnames in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].particle_name_messages)))
-                elif msg_type == 'bonds-update':
-                    channels[i].bond_messages.append(message)
-                elif msg_type == 'bonds-complete':
-                    channels[i].initialized = True
-                    initialized_simulations += 1
-                    print("channel of type " + str(channels[i].simulation_type) + " is initialized")  
-                    print("num of pnames in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].particle_name_messages)))
-                    print("number of initialized simulations: " + str(initialized_simulations))
-    else:
-        for i in range(0, len(channels)):
-            channel_socket = channels[i].socket
-            if socks.get(channel_socket) == zmq.POLLIN:
-                message = channel_socket.recv_multipart()
-                #message = backend.recv_multipart()
-                msg_type = message[0]
-
-                #we want to know when any of the channels restarts
-                if msg_type == 'hoomd-startup':
-                    channels[i].reset_init_data()
-                    initialized_simulations -= 1
-
+    for i in range(0, len(channels)):
+        channel_socket = channels[i].socket
+        if socks.get(channel_socket) == zmq.POLLIN:
+            message = channel_socket.recv_multipart()
+            msg_type = message[0]
+            print(str(channels[i].simulation_type) + " --- " + str(msg_type))
+            if msg_type == 'names-update':
+                channels[i].particle_name_messages.append(message)
+            elif msg_type == 'bonds-update':
+                channels[i].bond_messages.append(message)
+            elif msg_type == 'bonds-complete':
+                channels[i].initialized = True
+                initialized_simulations += 1
+                print("channel of type " + str(channels[i].simulation_type) + " is initialized")  
+                print("num of pnames in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].particle_name_messages)))
+                print("number of initialized simulations: " + str(initialized_simulations))
+            elif msg_type == 'hoomd-startup':
+                channels[i].reset_init_data()
+                initialized_simulations -= 1
                 #we only need to worry about unity-hoomd communication with the active channel
-                if (i == active_channel):
-                    if msg_type == 'state-update':
-                        expecting_state_update = True
-                    publisher.send_multipart(message)
-                        
-
-
-
-
-    # elif socks.get(backend) == zmq.POLLIN:
-    #     message = backend.recv_multipart()
-    #     msg_type = message[0]
-
-    #     if msg_type == 'state-update':
-    #         expecting_state_update = True
-    #     elif msg_type == 'hoomd-startup':
-    #         print("hoomd startup triggered")
-    #         channels[active_channel].reset_init_data()
-    #         initialized_simulations -= 1
-    #     publisher.send_multipart(message)
-
-    # if socks.get(backend) == zmq.POLLIN:
-    #     if initialized_simulations != len(channels):
-    #         for i in range (0, len(channels)):
-    #             channel_socket = channels[i].socket
-    #             if socks.get(channel_socket) == zmq.POLLIN:
-    #                 message = channel_socket.recv_multipart()
-    #                 msg_type = message[0]
-    #                 print(str(channels[i].simulation_type) + " --- " + str(msg_type))
-    #                 if msg_type == 'names-update':
-    #                     channels[i].particle_name_messages.append(message)
-    #                 elif msg_type == 'bonds-update':
-    #                     channels[i].bond_messages.append(message)
-    #                 elif msg_type == 'bonds-complete':
-    #                     channels[i].initialized = True
-    #                     initialized_simulations += 1
-    #                     print("num initialized sims: " + str(initialized_simulations))
-        # else:
-        #     message = backend.recv_multipart()
-        #     msg_type = message[0]
-
-        #     if msg_type == 'state-update':
-        #         expecting_state_update = True
-        #     elif msg_type == 'hoomd-startup':
-        #         print("hoomd startup triggered")
-        #         channels[active_channel].reset_init_data()
-        #         initialized_simulations -= 1
-
-        #     publisher.send_multipart(message)
+            elif (i == active_channel and channels[i].initialized):
+                if msg_type == 'state-update':
+                    expecting_state_update = True   
+                publisher.send_multipart(message)
 
     #check that each client is aware of the current active channel
     for client_id in client_dict:
@@ -229,11 +172,13 @@ while True:
             print(str(len(client_dict)) + " client(s) connected")
 
         elif msg_type == 'simulation-update':
-            backend.send_multipart([msg_type, message[2]])
+            channels[active_channel].socket.send_multipart([msg_type, message[2]])
+            #backend.send_multipart([msg_type, message[2]])
             expecting_state_update = False #Unity obliged Hoomd's state-update request
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
         if expecting_state_update:
-            backend.send_multipart(default_state_update)
+            channels[active_channel].socket.send_multipart(default_state_update)
+            #backend.send_multipart(default_state_update)
             expecting_state_update = False
 
 
