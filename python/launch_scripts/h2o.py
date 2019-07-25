@@ -109,5 +109,4 @@ def set_callback(**data):
 hoomd.hzmq.hzmq('tcp://*:5550', period=10, message_size=300, state_callback=callback, set_state_callback=set_callback)
 c.sorter.disable()
 for i in range(10000):
-    print("run number " + str(i))
     hoomd.run(1e3)
