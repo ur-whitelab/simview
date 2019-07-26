@@ -8,11 +8,14 @@ public class MoleculeSystemGPU : MonoBehaviour
     [SerializeField]
     private Transform atomPrefab;
     [SerializeField]
+    private Transform atomPrefabSprite;
+    [SerializeField]
     private Transform bondPrefab;
     [SerializeField]
     private vrCommClient cc;
 
     private Transform[] moleculeTransforms;
+    private Transform[] molTransforms_Sprites;
     private Vector3[] frameUpdatePositions;
     private bool[] activeMolecules;
 
@@ -40,6 +43,8 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     //simulation viz box dimensions.
     private Vector3 max_particle_position;
+
+    bool mesh_rend = true;
 
     // Start is called before the first frame update
     void Start()
@@ -70,15 +75,16 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private void MolSysProcessFrameUpdate(Frame frame)
     {
+        //scaleF = 1.0f;
+        //posOffset = new Vector3(0.0f, 0.0f, 0.0f);
         for (int i = frame.I; i < frame.I + frame.N; i++)
         {
-            frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X * scaleF,
-                                                  frame.Positions(i - frame.I).Value.W * scaleF,
-                                                  frame.Positions(i - frame.I).Value.Y * scaleF) + posOffset;
-            //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.W,
-            //                                      frame.Positions(i - frame.I).Value.X,
-            //                                      frame.Positions(i - frame.I).Value.Y);
-            //Debug.Log("idx: " + i + "pos: " + frameUpdatePositions[i]);
+            //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.Y * scaleF,
+            //                                     frame.Positions(i - frame.I).Value.X * scaleF,
+            //                                   frame.Positions(i - frame.I).Value.W * scaleF) + posOffset;
+            frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X,
+                                                  frame.Positions(i - frame.I).Value.Y,
+                                                  frame.Positions(i - frame.I).Value.Z) * scaleF + posOffset;
             activeMolecules[i] = true;
 
         }
@@ -91,6 +97,7 @@ public class MoleculeSystemGPU : MonoBehaviour
         for (int i = 0; i < num_positions_from_hoomd; i++)
         {
             moleculeTransforms[i].position = frameUpdatePositions[i];
+            molTransforms_Sprites[i].position = frameUpdatePositions[i];
 
             if (max_particle_position.magnitude < frameUpdatePositions[i].magnitude)
             {
@@ -101,9 +108,11 @@ public class MoleculeSystemGPU : MonoBehaviour
             if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
             {
                 moleculeTransforms[i].gameObject.SetActive(false);
+                molTransforms_Sprites[i].gameObject.SetActive(false);
             } else
             {
-                moleculeTransforms[i].gameObject.SetActive(true);
+                moleculeTransforms[i].gameObject.SetActive(mesh_rend);
+                molTransforms_Sprites[i].gameObject.SetActive(!mesh_rend);
             }
         }
 
@@ -216,6 +225,7 @@ public class MoleculeSystemGPU : MonoBehaviour
             for (int i = 0; i < moleculeTransforms.Length; i++)
             {
                 Destroy(moleculeTransforms[i].gameObject);
+                Destroy(molTransforms_Sprites[i].gameObject);
             }
         }
 
@@ -226,6 +236,7 @@ public class MoleculeSystemGPU : MonoBehaviour
         }
 
         moleculeTransforms = new Transform[num_positions_from_hoomd];
+        molTransforms_Sprites = new Transform[num_positions_from_hoomd];
         frameUpdatePositions = new Vector3[num_positions_from_hoomd];
         activeMolecules = new bool[num_positions_from_hoomd];
 
@@ -244,8 +255,11 @@ public class MoleculeSystemGPU : MonoBehaviour
 
             moleculeTransforms[i] = Instantiate(atomPrefab);
             moleculeTransforms[i].position = transform.position;
-       
             moleculeTransforms[i].SetParent(transform);
+
+            molTransforms_Sprites[i] = Instantiate(atomPrefabSprite);
+            molTransforms_Sprites[i].position = transform.position;
+            molTransforms_Sprites[i].SetParent(transform);
 
             switch (particleNames[i])
             {
@@ -296,6 +310,7 @@ public class MoleculeSystemGPU : MonoBehaviour
                 }
             }
             moleculeTransforms[i].gameObject.SetActive(false);
+            molTransforms_Sprites[i].gameObject.SetActive(false);
 
         }
         //MaterialPropertyBlock bond_properties = new MaterialPropertyBlock();
@@ -396,5 +411,37 @@ public class MoleculeSystemGPU : MonoBehaviour
     public Vector3 getMaxParticlePos()
     {
         return max_particle_position;
+    }
+
+    public void InitSpriteMolView()
+    {
+        mesh_rend = false;
+        if (molTransforms_Sprites.Length != moleculeTransforms.Length)
+        {
+            Debug.Log("sprite and mesh transforms not equal!");
+
+        }
+
+        for (int i = 0; i < molTransforms_Sprites.Length; i++)
+        {
+            molTransforms_Sprites[i].gameObject.SetActive(true);
+            moleculeTransforms[i].gameObject.SetActive(false);
+        }
+    }
+
+    public void InitMeshMolView()
+    {
+        mesh_rend = true;
+        if (molTransforms_Sprites.Length != moleculeTransforms.Length)
+        {
+            Debug.Log("sprite and mesh transforms not equal!");
+
+        }
+
+        for (int i = 0; i < molTransforms_Sprites.Length; i++)
+        {
+            molTransforms_Sprites[i].gameObject.SetActive(false);
+            moleculeTransforms[i].gameObject.SetActive(true);
+        }
     }
 }

@@ -53,7 +53,8 @@ public class SimInterface : MonoBehaviour
         // now set data
         var newdata = new Dictionary<string, string>();
         newdata["temperature"] = "" + setTemperature;
-        newdata["pressure"] = "" + setPressure;
+        // newdata["pressure"] = "" + setPressure;
+        newdata["pressure"] = "";
         newdata["box"] = "" + scale;
         scale = 1f;
         cc.SetMessage(newdata);
@@ -81,9 +82,26 @@ public class SimInterface : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            scale = 1.05f;
+            scale += 0.01f;
         }
         if (Input.GetKeyDown(KeyCode.X))
+        {
+            scale -= 0.01f;
+        }
+        //AR table input
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        {
+            setTemperature += 0.01f;
+        }
+        else if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        {
+            setTemperature -= 0.01f;
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            scale = 1.05f;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             scale = 0.92f;
         }

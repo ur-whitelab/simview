@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -2071,7 +2071,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://192.168.1.168:'
+  BROKER_IP_ADDRESS: 'tcp://localhost:'
   ipCanvas: {fileID: 755554476}
   ipInputField: {fileID: 905085582}
 --- !u!4 &807383554
@@ -3585,10 +3585,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   atomPrefab: {fileID: 4251007899870232, guid: 2291ca955b6f24960a61f3c2d0301f90, type: 3}
+  atomPrefabSprite: {fileID: 4251007899870232, guid: 1003fa5decedd45469eec6c93a9f7150,
+    type: 3}
   bondPrefab: {fileID: 7565268235312117650, guid: 3ab7653bc77534adba126ab0d17e9aa2,
     type: 3}
   cc: {fileID: 807383553}
-  posOffset: {x: 0, y: 2.87, z: 0}
+  posOffset: {x: 0, y: 3.14, z: 0}
   scaleF: 0.35
 --- !u!4 &1723106787
 Transform:
@@ -3718,8 +3720,8 @@ Camera:
   m_GameObject: {fileID: 1764287207}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.1762193, g: 0.17703548, b: 0.2264151, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -3760,7 +3762,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1764287207}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 3, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -3964,6 +3966,8 @@ MonoBehaviour:
   - {fileID: 1685291935}
   - {fileID: 145613568}
   DebugCanvas: {fileID: 620243499}
+  cam_pos: {x: 0, y: 0, z: 0}
+  cam_rot: {x: 0, y: 0, z: 0}
 --- !u!4 &1833270058
 Transform:
   m_ObjectHideFlags: 0

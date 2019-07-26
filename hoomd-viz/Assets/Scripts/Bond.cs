@@ -36,5 +36,17 @@ public class Bond : MonoBehaviour
             transform.up = pos_delta;
             transform.localScale = scale;
         }
+
+        if (!atom1.activeInHierarchy || !atom2.activeInHierarchy)
+        {
+            //gameObject.SetActive(false);
+            GetComponent<MeshRenderer>().enabled = false;
+        } else
+        {
+            if (!gameObject.activeInHierarchy)
+            {
+                GetComponent<MeshRenderer>().enabled = true;
+            }
+        }
     }
 }

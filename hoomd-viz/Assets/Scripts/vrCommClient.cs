@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://192.168.1.168:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -96,7 +96,7 @@ public class vrCommClient : MonoBehaviour
         if (!all_bonds_read)
         {
             //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
-            //Either we'll get them or we will get them eventually once Hoomd starts for the first time.
+            //Either we'll get them normally or we will get them eventually once Hoomd starts for the first time.
             received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
         }
         else
@@ -118,7 +118,7 @@ public class vrCommClient : MonoBehaviour
         }
 
         string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
-        Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
+//        Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
 
         switch (msgType)
         {
@@ -260,11 +260,11 @@ public class vrCommClient : MonoBehaviour
     }
 #if UNITY_ANDROID
 
-        private void OnApplicationPause(bool pause)
-        {
-            FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
-            zmqCleanUp();  
-        }
+    private void OnApplicationPause(bool pause)
+    {
+        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+        zmqCleanUp();
+    }
 
 #endif
 

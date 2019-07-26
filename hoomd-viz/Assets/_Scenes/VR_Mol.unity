@@ -788,7 +788,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://192.168.1.168:'
+  BROKER_IP_ADDRESS: 'tcp://10.4.0.192:'
   ipCanvas: {fileID: 1925686908}
   ipInputField: {fileID: 58447839}
 --- !u!4 &764097287

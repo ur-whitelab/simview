@@ -21,6 +21,7 @@ public class SceneManager : MonoBehaviour
 	private GameObject env;
 	[SerializeField]
 	private GameObject camera;
+    private Camera mainCam;
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
     private PairSocket PairClient;
@@ -39,6 +40,8 @@ public class SceneManager : MonoBehaviour
 
     private int active_channel = 0;
 
+    public Vector3 cam_pos;
+    public Vector3 cam_rot;
     // Start is called before the first frame update
     void Start()
     {
@@ -48,6 +51,8 @@ public class SceneManager : MonoBehaviour
         //idx, type, ip, initialized?, active?
         sim_channel_data_list = new List<string[]>();
         client_data_list = new List<string[]>();
+
+        mainCam = camera.GetComponent<Camera>();
 
     }
 
@@ -71,8 +76,23 @@ public class SceneManager : MonoBehaviour
         } else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
             current_active_channel = 3;
+        } else if (Input.GetKeyDown(KeyCode.I))
+        {
+            cam_pos = new Vector3(0, 14, 10);
+            camera.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            mainCam.orthographic = true;
+        } else if (Input.GetKeyDown(KeyCode.R))
+        {
+            camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            cam_pos = new Vector3(0, 0, 0);
+            mainCam.orthographic = false;
+        } else if (Input.GetKeyDown(KeyCode.M))
+        {
+            molSystem.InitMeshMolView();
+        } else if (Input.GetKeyDown(KeyCode.N))
+        {
+            molSystem.InitSpriteMolView();
         }
-
 
         if (current_active_channel != active_channel)
         {
@@ -91,11 +111,15 @@ public class SceneManager : MonoBehaviour
 		{
 			molSystem.setScaleF(0.1f);
             camera.transform.position = new Vector3(0, 1, -19.95f);
+            camera.transform.localRotation = Quaternion.Euler(0, 0, 90);
+            mainCam.orthographic = true;
+            //camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
             env.SetActive(false);
 		} else
 		{
 			molSystem.setScaleF(0.35f);
-            camera.transform.position = new Vector3(0, 1, -10);
+            camera.transform.position = new Vector3(0, 3, -10) + cam_pos;
+            //camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
             env.SetActive(true);
         }
 
