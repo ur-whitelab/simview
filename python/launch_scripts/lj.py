@@ -11,6 +11,7 @@ def find_molecules(system):
     mapping = []
     mapped = set()
     N = len(system.particles)
+    print("num particles in fm: " + str(N))
     unmapped = set(range(N))
     pi = 0
 
@@ -56,9 +57,9 @@ def find_molecules(system):
     return mapping
 
 c = hoomd.context.initialize()
-system = hoomd.init.create_lattice(unitcell=hoomd.lattice.bcc(a=4.0, type_name='A'), n=10)
+system = hoomd.init.create_lattice(unitcell=hoomd.lattice.bcc(a=4.0, type_name='A'), n=15)
 #system = hoomd.init.create_lattice(unitcell=hoomd.lattice.sq(a=4.0), n=[72, 128])
-
+#N=6750
 nl = hoomd.md.nlist.cell()
 lj = hoomd.md.pair.lj(r_cut=2.5, nlist=nl)
 lj.pair_coeff.set('A', 'A', epsilon=2.0, sigma=1.0)
@@ -105,7 +106,7 @@ def set_callback(**data):
             hoomd.update.box_resize(Lx=scale * log.query('lx') , Ly=scale * log.query('ly'), Lz=scale * log.query('lz'), period=None, scale_particles=True)
         
 #For a 3d lattice, a message size of 400 (switched from 288) ended the allocation errors.
-hoomd.hzmq.hzmq('tcp://*:5551', period=50, message_size=400, state_callback=callback, set_state_callback=set_callback)
+hoomd.hzmq.hzmq('tcp://*:5551', period=50, message_size=225, state_callback=callback, set_state_callback=set_callback)
 c.sorter.disable()
 for i in range(10000):
     hoomd.run(1e3)

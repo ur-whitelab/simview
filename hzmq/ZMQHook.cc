@@ -16,6 +16,8 @@ m_exec_conf(sysdef->getParticleData()->getExecConf()), m_fbb(NULL), m_period(per
       << "Bound ZMQ Socket on " << uri
       << std::endl;
 
+       m_socket.send(zmq::message_t("hoomd-startup", 13));
+
     // check a few things
     assert(FLATBUFFERS_LITTLEENDIAN);
     if(sizeof(Scalar4) != sizeof(HZMsg::Scalar4)) {
@@ -34,17 +36,18 @@ void ZMQHook::updateSize(unsigned int N) {
   if(N == 0)
     N = 340; // to avoid infinite loops
   // change our sizes
-  if(m_fbb)
-    delete m_fbb; // this should dellocate our fbb
+  // if(m_fbb)
+  //   delete m_fbb; // this should dellocate our fbb
 
-  // build our buffer
-  m_fbb = new flatbuffers::FlatBufferBuilder();
-  HZMsg::Scalar4 fbb_scalar4s[N];
-  auto fbb_positions = m_fbb->CreateVectorOfStructs(fbb_scalar4s, N);
-  // why 1? Because if you use default, it assumes you don't want that position
-  // so you cannot mutate it later
-  auto frame = HZMsg::CreateFrame(*m_fbb, N, 1, 1, fbb_positions);
-  HZMsg::FinishFrameBuffer(*m_fbb, frame);
+  // // build our buffer
+  // m_fbb = new flatbuffers::FlatBufferBuilder();
+
+  // HZMsg::Scalar4 fbb_scalar4s[N];
+  // auto fbb_positions = m_fbb->CreateVectorOfStructs(fbb_scalar4s, N);
+  // // why 1? Because if you use default, it assumes you don't want that position
+  // // so you cannot mutate it later
+  // auto frame = HZMsg::CreateFrame(*m_fbb, N, 1, 1, fbb_positions);
+  // HZMsg::FinishFrameBuffer(*m_fbb, frame);
 
   // update our N
   m_N = N;
@@ -67,7 +70,7 @@ void ZMQHook::update(unsigned int timestep)  {
       size_t N = positions.getNumElements();
 
       //get mutable frame
-      auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
+      //auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
       int Ni = 0;
       int count = 0;
       std::cout << " N: " << N << std::endl;
@@ -75,18 +78,41 @@ void ZMQHook::update(unsigned int timestep)  {
         // our message will be either m_N or long enough to complete sending the positions
         // why doesn't std::min work here?
         Ni = m_N <= N - (i + m_N) ? m_N : N - i;
-        frame->mutate_I(i);
-        frame->mutate_N(Ni);
-        frame->mutate_time(timestep);
+
+        flatbuffers::FlatBufferBuilder builder(4644);
+        HZMsg::Scalar4 fbb_scalar4s[N];
+        for (int s = 0; s < Ni; s++)
+        {
+          fbb_scalar4s[s] = HZMsg::Scalar4(positions_data.data[i+s].x, positions_data.data[i+s].y, positions_data.data[i+s].z, positions_data.data[i+s].w); 
+        }
+        //std::vector<HZMsg::Scalar4>
+        auto fbb_positions = builder.CreateVectorOfStructs(fbb_scalar4s, Ni);
+
+        //memcpy(&fbb_positions, &positions_data.data[i], Ni * sizeof(Scalar4));
+
+        auto _f = CreateFrame(builder, Ni, i, timestep, fbb_positions);
+        builder.Finish(_f);
+
+        uint8_t *buf = builder.GetBufferPointer();
+        int buf_size = builder.GetSize();
+       
+        zmq::message_t msg(buf_size);
+        memcpy((void *)msg.data(), builder.GetBufferPointer(), buf_size);
+
+
+        // frame->mutate_I(i);
+        // frame->mutate_N(Ni);
+        // frame->mutate_time(timestep);
+
+        zmq::multipart_t multipart;
 
         //memcpy over the positions
-        memcpy(frame->mutable_positions(), &positions_data.data[i], Ni * sizeof(Scalar4));
-
+        
         // set up message
-        zmq::multipart_t multipart;
+        
         // we will copy the framebuffer (this ctor does it).
         // Otherwise we can have repeated messages!
-        zmq::message_t msg(m_fbb->GetBufferPointer(), m_fbb->GetSize());
+
         // move to multipart
         multipart.addstr("frame-update");
         multipart.add(std::move(msg));
@@ -135,15 +161,15 @@ void ZMQHook::sendInitInfo() {
       size_t ppN = positions.getNumElements();
       ArrayHandle<Scalar4> positions_data(positions, access_location::host,
                            access_mode::read);
-  //     std::cout << " num particles PN: " << pN << " ppN: " << ppN << std::endl;
-  //   for (int i = 0; i< pN; i++)
-  // {
-  //   std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].y << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
-  //   std::cout << "pd name: " << m_pdata->getNameByType(positions_data.data[i].w) << std::endl;
+      std::cout << " num particles PN: " << pN << " ppN: " << ppN << std::endl;
+    for (int i = 0; i< pN; i++)
+  {
+    std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].y << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
+    std::cout << "pd name: " << m_pdata->getNameByType(positions_data.data[i].w) << std::endl;
 
-  //   unsigned int _t = m_pdata->getType(i);
-  //   std::cout << " type of particle " << i << ": " << _t << " name(_t): " << m_pdata->getNameByType(_t) << std::endl;
-  // }
+    unsigned int _t = m_pdata->getType(i);
+    std::cout << " type of particle " << i << ": " << _t << " name(_t): " << m_pdata->getNameByType(_t) << std::endl;
+  }
       //index,name
       for (unsigned int i = 0; i < pN; i+= m_b_N)
       {
