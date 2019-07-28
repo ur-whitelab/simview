@@ -230,10 +230,22 @@ public class SceneManager : MonoBehaviour
 
         Debug.Log("Instructor pair socket connected on " + port_address);
 
-	}
+        var sendMsg = new NetMQMessage();
+        sendMsg.Append("first-msg-instructor");
+        sendMsg.Append(vrCC.client_id);
+
+        PairClient.TrySendMultipartMessage(waitTime, sendMsg);
+
+    }
 
     private void cleanUpInstructorSocket()
     {
+        var sendMsg = new NetMQMessage();
+        sendMsg.Append("last-msg-instructor");
+        sendMsg.Append(vrCC.client_id);
+
+        PairClient.TrySendMultipartMessage(waitTime, sendMsg);
+
         PairClient.Close();
         PairClient.Dispose();
     }

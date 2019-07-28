@@ -82,11 +82,11 @@ public class SimInterface : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            scale += 0.01f;
+            //scale += 0.01f;
         }
         if (Input.GetKeyDown(KeyCode.X))
         {
-            scale -= 0.01f;
+          //  scale -= 0.01f;
         }
         //AR table input
         if (Input.GetKeyDown(KeyCode.KeypadPlus))
@@ -99,11 +99,11 @@ public class SimInterface : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            scale = 1.05f;
+          //  scale = 1.05f;
         }
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            scale = 0.92f;
+//scale = 0.92f;
         }
     }
 

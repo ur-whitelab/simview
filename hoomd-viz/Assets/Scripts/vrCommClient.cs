@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://localhost:";
+    public string BROKER_IP_ADDRESS = "tcp://10.4.2.18:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -52,7 +52,7 @@ public class vrCommClient : MonoBehaviour
 
     private string sendMsgStr = "{}";
 
-    string client_id = "0";
+    public string client_id = "0";
 
     private int last_msg_not_rec_fc = 0;
 
@@ -235,7 +235,7 @@ public class vrCommClient : MonoBehaviour
         string downstream_port_address = BROKER_IP_ADDRESS + "5559";
 
         FrameClient = new DealerSocket();
-        FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);
+        FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes(client_id);
         FrameClient.Connect(upstream_port_address);
         Debug.Log("Dealer Socket connected on " + upstream_port_address);
         FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("first-msg"));
@@ -258,15 +258,15 @@ public class vrCommClient : MonoBehaviour
 
         zmq_initialized = false;
     }
-#if UNITY_ANDROID
+//#if UNITY_ANDROID
 
-    private void OnApplicationPause(bool pause)
-    {
-        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
-        zmqCleanUp();
-    }
+//    private void OnApplicationPause(bool pause)
+//    {
+//        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+//        zmqCleanUp();
+//    }
 
-#endif
+//#endif
 
     private void OnApplicationQuit()
     {

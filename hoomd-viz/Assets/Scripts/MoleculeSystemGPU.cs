@@ -20,15 +20,14 @@ public class MoleculeSystemGPU : MonoBehaviour
     private bool[] activeMolecules;
 
     private int num_positions_from_hoomd = 0;
-    private int num_particles_from_hoomd = 0;
+    public int num_particles_from_hoomd = 0;
     private float init_radius = 50f;
     private float bond_length = 0.075f;
 
     [SerializeField]
     private Vector3 posOffset;
 
-    [SerializeField]
-    private float scaleF = 1.0f;
+    public float scaleF = 1.0f;
 
     private float last_graphics_update_time;
     private int last_graphics_update_frameCount;
@@ -49,8 +48,8 @@ public class MoleculeSystemGPU : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        cc.OnNewFrame += MolSysProcessFrameUpdate;
-        cc.OnCompleteFrame += MolSysEndFrameUpdate;
+        //cc.OnNewFrame += MolSysProcessFrameUpdate;
+        //cc.OnCompleteFrame += MolSysEndFrameUpdate;
 
         cc.OnNewBondFrame += MolSysProcessBondFrameUpdate;
         cc.OnCompleteBondFrame += MolSysProcessBondFrameComplete;
@@ -73,73 +72,88 @@ public class MoleculeSystemGPU : MonoBehaviour
         num_graphics_updates = 0.0f;
     }
 
-    private void MolSysProcessFrameUpdate(Frame frame)
+    public void UpdatePositions(Vector3[] positionsFromQueue)
     {
-        //scaleF = 1.0f;
-        //posOffset = new Vector3(0.0f, 0.0f, 0.0f);
-        for (int i = frame.I; i < frame.I + frame.N; i++)
-        {
-            //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.Y * scaleF,
-            //                                     frame.Positions(i - frame.I).Value.X * scaleF,
-            //                                   frame.Positions(i - frame.I).Value.W * scaleF) + posOffset;
-            frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X,
-                                                  frame.Positions(i - frame.I).Value.Y,
-                                                  frame.Positions(i - frame.I).Value.Z) * scaleF + posOffset;
-            activeMolecules[i] = true;
-
-        }
-    }
-
-    private void MolSysEndFrameUpdate()
-    {
-        num_graphics_updates += 1.0f;
-        //update graphics
         for (int i = 0; i < num_positions_from_hoomd; i++)
         {
-            moleculeTransforms[i].position = frameUpdatePositions[i];
-            molTransforms_Sprites[i].position = frameUpdatePositions[i];
+            //moleculeTransforms[i].position = Vector3.zero;
+            //molTransforms_Sprites[i].position = Vector3.zero;
+            moleculeTransforms[i].position = positionsFromQueue[i];
+            molTransforms_Sprites[i].position = positionsFromQueue[i];
 
-            if (max_particle_position.magnitude < frameUpdatePositions[i].magnitude)
-            {
-                max_particle_position = frameUpdatePositions[i];
-                Debug.Log("max_particle_position mag: " + max_particle_position.magnitude);
-            }
-
-            if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
-            {
-                moleculeTransforms[i].gameObject.SetActive(false);
-                molTransforms_Sprites[i].gameObject.SetActive(false);
-            } else
-            {
-                moleculeTransforms[i].gameObject.SetActive(mesh_rend);
-                molTransforms_Sprites[i].gameObject.SetActive(!mesh_rend);
-            }
+            moleculeTransforms[i].gameObject.SetActive(mesh_rend);
+            molTransforms_Sprites[i].gameObject.SetActive(!mesh_rend);
         }
-
-        activeMolecules = new bool[num_positions_from_hoomd]; //reset active mol array.
-
-        float current_graphics_update_time = Time.time;
-        float current_graphics_update_frameCount = Time.frameCount;
-
-        float time_delta = current_graphics_update_time - last_graphics_update_time;
-        float frame_delta = current_graphics_update_frameCount - last_graphics_update_frameCount;
-
-        float delta_fps = frame_delta / time_delta;
-
-        total_fps_sum += delta_fps;
-        float avg_fps = total_fps_sum / num_graphics_updates;
-
-        if (Mathf.Abs(delta_fps - avg_fps) >= 10.0f)
-        {
-            Debug.Log("average fps: " + avg_fps);
-            Debug.Log("frames since last graphics update: " + frame_delta);
-            Debug.Log("seconds since last graphics update: " + time_delta);
-            Debug.Log("graphics fps: " + delta_fps);
-        }
-
-        last_graphics_update_time = Time.time;
-        last_graphics_update_frameCount = Time.frameCount;
     }
+
+    //private void MolSysProcessFrameUpdate(Frame frame)
+    //{
+    //    //scaleF = 1.0f;
+    //    //posOffset = new Vector3(0.0f, 0.0f, 0.0f);
+    //    for (int i = frame.I; i < frame.I + frame.N; i++)
+    //    {
+    //        //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.Y * scaleF,
+    //        //                                     frame.Positions(i - frame.I).Value.X * scaleF,
+    //        //                                   frame.Positions(i - frame.I).Value.W * scaleF) + posOffset;
+    //        frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X,
+    //                                              frame.Positions(i - frame.I).Value.Y,
+    //                                              frame.Positions(i - frame.I).Value.Z) * scaleF + posOffset;
+    //        activeMolecules[i] = true;
+
+    //    }
+    //}
+
+    //private void MolSysEndFrameUpdate()
+    //{
+    //    num_graphics_updates += 1.0f;
+    //    //update graphics
+    //    for (int i = 0; i < num_positions_from_hoomd; i++)
+    //    {
+    //        moleculeTransforms[i].position = frameUpdatePositions[i];
+    //        molTransforms_Sprites[i].position = frameUpdatePositions[i];
+
+    //        if (max_particle_position.magnitude < frameUpdatePositions[i].magnitude)
+    //        {
+    //            max_particle_position = frameUpdatePositions[i];
+    //            Debug.Log("max_particle_position mag: " + max_particle_position.magnitude);
+    //        }
+
+    //        if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
+    //        {
+    //            moleculeTransforms[i].gameObject.SetActive(false);
+    //            molTransforms_Sprites[i].gameObject.SetActive(false);
+    //        }
+    //        else
+    //        {
+    //            moleculeTransforms[i].gameObject.SetActive(mesh_rend);
+    //            molTransforms_Sprites[i].gameObject.SetActive(!mesh_rend);
+    //        }
+    //    }
+
+    //    activeMolecules = new bool[num_positions_from_hoomd]; //reset active mol array.
+
+    //    float current_graphics_update_time = Time.time;
+    //    float current_graphics_update_frameCount = Time.frameCount;
+
+    //    float time_delta = current_graphics_update_time - last_graphics_update_time;
+    //    float frame_delta = current_graphics_update_frameCount - last_graphics_update_frameCount;
+
+    //    float delta_fps = frame_delta / time_delta;
+
+    //    total_fps_sum += delta_fps;
+    //    float avg_fps = total_fps_sum / num_graphics_updates;
+
+    //    if (Mathf.Abs(delta_fps - avg_fps) >= 10.0f)
+    //    {
+    //        Debug.Log("average fps: " + avg_fps);
+    //        Debug.Log("frames since last graphics update: " + frame_delta);
+    //        Debug.Log("seconds since last graphics update: " + time_delta);
+    //        Debug.Log("graphics fps: " + delta_fps);
+    //    }
+
+    //    last_graphics_update_time = Time.time;
+    //    last_graphics_update_frameCount = Time.frameCount;
+    //}
 
     private void MolSysProcessBondFrameUpdate(string msg_string)
     {
@@ -201,6 +215,8 @@ public class MoleculeSystemGPU : MonoBehaviour
     {
         num_positions_from_hoomd = particleNames.Count;
         num_particles_from_hoomd = particleNames.Count;
+
+
 
     }
 

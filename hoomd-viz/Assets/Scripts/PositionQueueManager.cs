@@ -1,0 +1,156 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using HZMsg;
+
+public class PositionQueueManager : MonoBehaviour
+{
+    private Vector3[] firstPositions;
+    private Vector3[] secondPositions;
+    private Vector3[] tmpPositions;
+
+    private bool[] activeMolecules;
+
+    private int num_positions_from_hoomd = -1;
+    private int num_firstPositions = 0;
+    private int num_secondPositions = 0;
+
+    private float scale_factor = 0.0f;
+
+    private float interpolationSpeed = 0.001f;
+    private int interpolationStep = 0;
+
+
+    [SerializeField]
+    private MoleculeSystemGPU moleculeSystem;
+    [SerializeField]
+    private vrCommClient vrCC;
+
+    bool firstPositionsEmpty = true;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        vrCC.OnNewFrame += PosProcessFrameUpdate;
+        vrCC.OnCompleteFrame += PosEndFrameUpdate;
+
+        vrCC.OnCompleteNames += PosProcessNamesComplete;
+
+        vrCC.OnHoomdStartup += PosPrepForNewHoomdSession;
+
+        scale_factor = moleculeSystem.scaleF;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //both position vectors are full so we can interpolate between them.
+        if ((num_firstPositions == num_secondPositions) && (num_firstPositions == num_positions_from_hoomd))
+        {
+            //interpolate first->second...
+            Vector3[] interpolatedPositions = new Vector3[num_positions_from_hoomd];
+
+            float interpolationProgress = (float)interpolationStep * interpolationSpeed;
+            Debug.Log("progress : " + interpolationProgress);
+            for (int i = 0; i < num_positions_from_hoomd; i++)
+            {
+                interpolatedPositions[i] = Vector3.Lerp(firstPositions[i], secondPositions[i], interpolationProgress);
+            }
+            moleculeSystem.UpdatePositions(interpolatedPositions);
+            if (System.Math.Abs(interpolationProgress - 1.0f) < 0.0001f)
+            {
+                firstPositions = secondPositions;
+                //num_secondPositions = 0;
+
+                interpolationStep = 0;
+            }
+            else
+            {
+                interpolationStep++;
+            }
+
+        }
+
+    }
+
+    private void PosPrepForNewHoomdSession()
+    {
+        num_positions_from_hoomd = -1;
+        num_firstPositions = 0;
+        num_secondPositions = 0;
+    }
+
+    private void PosProcessNamesComplete()
+    {
+        //assume every particle has a position - I'm pretty sure this is a safe assumption.
+        num_positions_from_hoomd = moleculeSystem.num_particles_from_hoomd;
+
+        tmpPositions = new Vector3[num_positions_from_hoomd];
+        firstPositions = new Vector3[num_positions_from_hoomd];
+        secondPositions = new Vector3[num_positions_from_hoomd];
+
+        Debug.Log("instantiating vectors in queue with size of " + num_positions_from_hoomd);
+
+        activeMolecules = new bool[num_positions_from_hoomd];
+    }
+
+    private void PosProcessFrameUpdate(Frame frame)
+    {
+
+        for (int i = frame.I; i < frame.I + frame.N; i++)
+        {
+            //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.Y * scaleF,
+            //                                     frame.Positions(i - frame.I).Value.X * scaleF,
+            //                                   frame.Positions(i - frame.I).Value.W * scaleF) + posOffset;
+            tmpPositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X,
+                                                  frame.Positions(i - frame.I).Value.Y,
+                                                  frame.Positions(i - frame.I).Value.Z) * scale_factor;
+            activeMolecules[i] = true;
+
+        }
+    }
+
+    private void PosEndFrameUpdate()
+    {
+        //update graphics
+        for (int i = 0; i < num_positions_from_hoomd; i++)
+        {
+            //push to first positions for interpolation
+            if (firstPositionsEmpty)
+            {
+                firstPositions[i] = tmpPositions[i];
+                num_firstPositions++;
+            } else
+            {
+                secondPositions[i] = tmpPositions[i];
+                num_secondPositions++;
+            }
+
+           // moleculeTransforms[i].position = frameUpdatePositions[i];
+           // molTransforms_Sprites[i].position = frameUpdatePositions[i];
+
+            //if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
+            //{
+            //    moleculeTransforms[i].gameObject.SetActive(false);
+            //    molTransforms_Sprites[i].gameObject.SetActive(false);
+            //}
+            //else
+            //{
+            //    moleculeTransforms[i].gameObject.SetActive(mesh_rend);
+            //    molTransforms_Sprites[i].gameObject.SetActive(!mesh_rend);
+            //}
+        }
+
+        if (num_firstPositions == num_positions_from_hoomd)
+        {
+            firstPositionsEmpty = false;
+        } else
+        {
+            Debug.Log("first positions still empty!");
+        }
+
+        activeMolecules = new bool[num_positions_from_hoomd]; //reset active mol array.
+
+
+    }
+}
