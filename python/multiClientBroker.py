@@ -10,7 +10,7 @@ from UnityClient import UnityClient
 
 print(str(len(sys.argv) - 1) + " simulations requested from the command line")
 
-base_ip_address = "tcp://10.5.2.228:"
+base_ip_address = "tcp://localhost:"
 
 sim_type_list = []
 
@@ -33,6 +33,8 @@ publisher.bind('tcp://*:5559')
 
 instructor = context.socket(zmq.PAIR)#instructor scene
 instructor.bind('tcp://*:5570')
+isInstructorConnected = False
+instructor_client_id = ''
 
 frame_count = 0
 
@@ -94,9 +96,9 @@ def send_init_data_to_client(_id):
         msg = [_id, n_msg[0], n_msg[1]]
         frontend.send_multipart(msg)
     print("sent names to client " + str(_id))
-    frontend.send_multipart([str(_id), b"names-complete"])
+    frontend.send_multipart([_id, b"names-complete"])
 
-    print("sending bonds to client " + _id)
+    print("sending bonds to client " + str(_id))
     for b_msg in b_data:
         msg = [_id, b_msg[0], b_msg[1]]
         frontend.send_multipart(msg)
@@ -148,6 +150,11 @@ while True:
             print("client " + str(uc.client_id) + " thinks that the active_channel is " + str(uc.active_channel))
             send_init_data_to_client(uc.client_id)
 
+    # if expecting_state_update:
+    #     channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
+    #     #backend.send_multipart(default_state_update)
+    #     expecting_state_update = False
+
     if socks.get(frontend) == zmq.POLLIN:
         message = frontend.recv_multipart()
         #First element is client id, 2nd is message type.
@@ -178,20 +185,29 @@ while True:
             expecting_state_update = False #Unity obliged Hoomd's state-update request
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
         if expecting_state_update:
-            channels[active_channel].socket.send_multipart(['simulation-update', bytes(default_state_update, 'utf-8')])
+            channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
             #backend.send_multipart(default_state_update)
             expecting_state_update = False
 
     if socks.get(instructor) == zmq.POLLIN:
         message = instructor.recv_multipart()
         msg_id = message[0]
-        if msg_id == b"ac-change":
+
+        if msg_id == b"first-msg-instructor":
+            instructor_client_id = message[1]
+            isInstructorConnected = True
+        elif msg_id == b'last-msg-instructor':
+            instructor_client_id = b''
+            isInstructorConnected = False
+
+        elif msg_id == b"ac-change":
             active_channel = int(message[1])
             publisher.send_multipart([b"hoomd-startup",b"tmp"])
             channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
+        
 
     #send debug info to the instructor.
-    if frame_count % 10 == 0:
+    if frame_count % 10 == 0 and isInstructorConnected:
         string_of_simulations_list = ""
         for i in range(0, len(channels)):
             c_type = channels[i].simulation_type
