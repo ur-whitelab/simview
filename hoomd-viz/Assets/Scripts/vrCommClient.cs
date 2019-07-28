@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://10.4.2.18:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
