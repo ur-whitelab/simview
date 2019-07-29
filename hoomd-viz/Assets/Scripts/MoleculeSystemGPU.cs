@@ -196,6 +196,7 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private void MolSysProcessNamesComplete()
     {
+        Debug.Log("num names from hoomd: " + particleNames.Count);
         num_positions_from_hoomd = particleNames.Count;
         num_particles_from_hoomd = particleNames.Count;
 

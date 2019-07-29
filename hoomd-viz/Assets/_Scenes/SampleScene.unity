@@ -291,7 +291,7 @@ GameObject:
 --- !u!199 &590181870
 ParticleSystemRenderer:
   serializedVersion: 6
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 2
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -5142,7 +5142,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 230822ceee69e4b33a4a3613c7db61fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ServerUri: tcp://localhost:5000
+  BROKER_IP_ADDRESS: 'tcp://10.4.8.236:'
+  client_id: 0
 --- !u!4 &644285889
 Transform:
   m_ObjectHideFlags: 0
@@ -5350,9 +5351,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6effb08cb0b4c43c6bac257a86317694, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TemperatureText: {fileID: 942117692}
-  DensityText: {fileID: 1917686712}
-  PressureText: {fileID: 628804339}
+  TemperatureText: {fileID: 942117694}
+  DensityText: {fileID: 1917686714}
+  PressureText: {fileID: 628804341}
 --- !u!1 &1917686712
 GameObject:
   m_ObjectHideFlags: 0

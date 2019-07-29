@@ -11,7 +11,7 @@ public class SimInterface : MonoBehaviour
     public GameObject DensityText;
     public GameObject PressureText;
 
-    private float setTemperature = 0.15f;
+    public float setTemperature = 0.15f;
     private float scale = 1f;
 
     private vrCommClient cc;

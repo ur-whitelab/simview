@@ -939,7 +939,7 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     randomizeRotationDirection: 0
-    maxNumParticles: 9216
+    maxNumParticles: 10000
     size3D: 0
     rotation3D: 0
     gravityModifier:
@@ -5742,6 +5742,7 @@ MonoBehaviour:
   TemperatureText: {fileID: 0}
   DensityText: {fileID: 0}
   PressureText: {fileID: 0}
+  setTemperature: 0.15
 --- !u!114 &382307147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6361,6 +6362,7 @@ MonoBehaviour:
   TemperatureText: {fileID: 134286995}
   DensityText: {fileID: 1764690401}
   PressureText: {fileID: 2032824441}
+  setTemperature: 0.15
 --- !u!1 &621666387
 GameObject:
   m_ObjectHideFlags: 0
@@ -6852,7 +6854,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://10.4.8.236:'
+  BROKER_IP_ADDRESS: 'tcp://10.5.6.31:'
   ipCanvas: {fileID: 755554476}
   ipInputField: {fileID: 905085582}
   client_id: 0
