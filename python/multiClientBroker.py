@@ -60,7 +60,7 @@ poller.register(instructor, zmq.POLLIN)
 #     "K": "5559"
 # }
 
-for i in range(0, num_sims_requested):
+for i in range(0, int(num_sims_requested)):
     print("starting simulation channel " + str(i) + " of type " + str(num_sims_requested))
 
     #sim_ip = base_ip_address + sim_ports[sim_type_list[i]]
