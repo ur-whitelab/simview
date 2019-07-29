@@ -380,8 +380,8 @@ public class vrCommClient : MonoBehaviour
     private void zmqStartUp()
     {
         // set-up sockets
-        string upstream_port_address = BROKER_IP_ADDRESS + "5556";
-        string downstream_port_address = BROKER_IP_ADDRESS + "5559";
+        string upstream_port_address = BROKER_IP_ADDRESS + "5571";
+        string downstream_port_address = BROKER_IP_ADDRESS + "5572";
 
         FrameClient = new DealerSocket();
         FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes(client_id);
