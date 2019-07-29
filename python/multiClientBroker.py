@@ -7,18 +7,17 @@ import json
 from Simulation import SimulationChannel
 from UnityClient import UnityClient
 
-
 print(str(len(sys.argv) - 1) + " simulations requested from the command line")
 
 base_ip_address = "tcp://localhost:"
 
-#sim_type_list = []
-num_sims_requested = 0
+sim_type_list = []
 
 if (len(sys.argv)== 1):
-    num_sims_requested = 1
+    print("No simulations requested! Defaulting just to liquid.")
+    sim_type_list = ["liquid"]
 else:
-    num_sims_requested = sys.argv[1]
+    sim_type_list = sys.argv[:1]
 
 active_channel = 0
 next_active_channel = 0
@@ -47,24 +46,16 @@ poller.register(frontend, zmq.POLLIN)
 poller.register(instructor, zmq.POLLIN)
 #poller.register(backend, zmq.POLLIN)
 
-# sim_ports = {
-#     "A": "5550",
-#     "B": "5551",
-#     "C": "5552",
-#     "E": "5553",
-#     "F": "5554",
-#     "G": "5555",
-#     "H": "5556",
-#     "I": "5557",
-#     "J": "5558",
-#     "K": "5559"
-# }
+sim_ports = {
+    "liquid": "5550",
+    "solid": "5551",
+    "gas": "5552"
+}
 
-for i in range(0, int(num_sims_requested)):
-    print("starting simulation channel " + str(i) + " of type " + str(num_sims_requested))
+for i in range(0, len(sim_type_list)):
+    print("starting simulation channel " + str(i) + " of type " + str(sim_type_list[i]))
 
-    #sim_ip = base_ip_address + sim_ports[sim_type_list[i]]
-    sim_ip = base_ip_address + "555" + str(i)
+    sim_ip = base_ip_address + sim_ports[sim_type_list[i]]
 
     sc_socket = context.socket(zmq.PAIR)
     sc_socket.connect(sim_ip)
@@ -73,25 +64,23 @@ for i in range(0, int(num_sims_requested)):
     sc = SimulationChannel(context, sim_ip, sc_socket, str(i))
     channels.append(sc)
 
-#backend = channels[active_channel].socket
-
 for i in range (0, len(channels)):
     if (i == active_channel):
         print("active channel is " + str(i))
-    print("i: " + str(i) + " channel is a sim of type " + str(channels[i].simulation_type))
+    print(str(i) + " channel is a sim of type " + str(channels[i].simulation_type))
     print("it has an ip address of " + str(channels[i].ip_address))
 
 client_dict = {}
 
 expecting_state_update = False
 
-# default_state_update = {
-#     "temperature": "0.15",
-#     "pressure": "1.0",
-#     "box": "1"
-# }
-#default_state_update = json.dumps(default_state_update)
-#last_state_update_msg = ["state-update", default_state_update]
+default_state_update = {
+    "temperature": "0.15",
+    "pressure": "1.0",
+    "box": "1"
+}
+default_state_update = json.dumps(default_state_update)
+last_state_update_msg = ["state-update", default_state_update]
 
 def send_init_data_to_client(_id):
 
@@ -195,7 +184,7 @@ while True:
             expecting_state_update = False #Unity obliged Hoomd's state-update request
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
         if expecting_state_update:
-            #channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
+            channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
             #backend.send_multipart(default_state_update)
             expecting_state_update = False
 
@@ -213,7 +202,7 @@ while True:
         elif msg_id == b"ac-change":
             active_channel = int(message[1])
             publisher.send_multipart([b"hoomd-startup",b"tmp"])
-            #channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
+            channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
         
 
     #send debug info to the instructor.
