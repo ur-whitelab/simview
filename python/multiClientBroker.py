@@ -12,12 +12,13 @@ print(str(len(sys.argv) - 1) + " simulations requested from the command line")
 
 base_ip_address = "tcp://localhost:"
 
-sim_type_list = []
+#sim_type_list = []
+num_sims_requested = 0
 
 if (len(sys.argv)== 1):
-    sim_type_list = ["h2o"]
+    num_sims_requested = 1
 else:
-    sim_type_list = sys.argv[1:]
+    num_sims_requested = sys.argv[1]
 
 active_channel = 0
 next_active_channel = 0
@@ -26,10 +27,10 @@ channels = []
 context = zmq.Context()
 
 frontend = context.socket(zmq.ROUTER)#unity upstream
-frontend.bind('tcp://*:5556')
+frontend.bind('tcp://*:5571')
 
 publisher = context.socket(zmq.PUB)#unity downstream
-publisher.bind('tcp://*:5559')
+publisher.bind('tcp://*:5572')
 
 instructor = context.socket(zmq.PAIR)#instructor scene
 instructor.bind('tcp://*:5570')
@@ -46,22 +47,30 @@ poller.register(frontend, zmq.POLLIN)
 poller.register(instructor, zmq.POLLIN)
 #poller.register(backend, zmq.POLLIN)
 
-sim_ports = {
-    "h2o": "5550",
-    "lj": "5551",
-    "lj2d": "5552"
-}
+# sim_ports = {
+#     "A": "5550",
+#     "B": "5551",
+#     "C": "5552",
+#     "E": "5553",
+#     "F": "5554",
+#     "G": "5555",
+#     "H": "5556",
+#     "I": "5557",
+#     "J": "5558",
+#     "K": "5559"
+# }
 
-for i in range(0, len(sim_type_list)):
-    print("starting simulation channel " + str(i) + " of type " + str(sim_type_list[i]))
+for i in range(0, num_sims_requested):
+    print("starting simulation channel " + str(i) + " of type " + str(num_sims_requested))
 
-    sim_ip = base_ip_address + sim_ports[sim_type_list[i]]
+    #sim_ip = base_ip_address + sim_ports[sim_type_list[i]]
+    sim_ip = base_ip_address + "555" + str(i)
 
     sc_socket = context.socket(zmq.PAIR)
     sc_socket.connect(sim_ip)
     poller.register(sc_socket, zmq.POLLIN)
 
-    sc = SimulationChannel(context, sim_ip, sc_socket, sim_type_list[i])
+    sc = SimulationChannel(context, sim_ip, sc_socket, str(i))
     channels.append(sc)
 
 #backend = channels[active_channel].socket
@@ -76,12 +85,12 @@ client_dict = {}
 
 expecting_state_update = False
 
-default_state_update = {
-    "temperature": "0.15",
-    "pressure": "1.0",
-    "box": "1"
-}
-default_state_update = json.dumps(default_state_update)
+# default_state_update = {
+#     "temperature": "0.15",
+#     "pressure": "1.0",
+#     "box": "1"
+# }
+#default_state_update = json.dumps(default_state_update)
 #last_state_update_msg = ["state-update", default_state_update]
 
 def send_init_data_to_client(_id):
@@ -185,7 +194,7 @@ while True:
             expecting_state_update = False #Unity obliged Hoomd's state-update request
         #if this trips then Hoomd is expecting a state-update and Unity hasn't sent one
         if expecting_state_update:
-            channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
+            #channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
             #backend.send_multipart(default_state_update)
             expecting_state_update = False
 
@@ -203,7 +212,7 @@ while True:
         elif msg_id == b"ac-change":
             active_channel = int(message[1])
             publisher.send_multipart([b"hoomd-startup",b"tmp"])
-            channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
+            #channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
         
 
     #send debug info to the instructor.
