@@ -18,13 +18,15 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://localhost:";
+    public string BROKER_IP_ADDRESS = "tcp://10.4.8.236:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
     public delegate void SimulationUpdateAction(Dictionary<string, string> state);
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
+    //public event NewFrameAction OnNewFrame_Forced;
+    //public event CompleteFrameAction OnCompleteFrame_Forced;
     public event SimulationUpdateAction OnSimulationUpdate;
 
     public event NewBondFrameAction OnNewBondFrame;
@@ -46,6 +48,8 @@ public class vrCommClient : MonoBehaviour
     private InputField ipInputField;
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
+    private System.TimeSpan waitTime_forced = new System.TimeSpan(0, 0, 5);
+
 
     private SubscriberSocket SubClient;
     private DealerSocket FrameClient;
@@ -60,6 +64,9 @@ public class vrCommClient : MonoBehaviour
 
     bool zmq_initialized = false;
 
+    //this will always be false for VR views but the instructor view has the ability to enable it.
+    public bool forceFPSToMatchHoomd = false;
+    private int updates = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -86,11 +93,10 @@ public class vrCommClient : MonoBehaviour
         sendMsgStr = JsonConvert.SerializeObject(msg, Formatting.Indented);
     }
 
-    // Update is called once per frame
-    void Update()
+    private void ProcessMessage()
     {
-        List<byte[]> msg = null;
 
+        List<byte[]> msg = null;
         //bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
         bool received;
         if (!all_bonds_read)
@@ -108,30 +114,30 @@ public class vrCommClient : MonoBehaviour
         if (msg == null || !received)
         {
 
-           // int fc = Time.frameCount;
+            // int fc = Time.frameCount;
 
             //Debug.Log("Message not received " + Time.frameCount + ", frames since last msg skip: " + (fc - last_msg_not_rec_fc));
 
-          //  last_msg_not_rec_fc = Time.frameCount;
+            //  last_msg_not_rec_fc = Time.frameCount;
 
             return;
         }
 
         string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
-//        Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
+        //        Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
 
         switch (msgType)
         {
             case ("frame-update"):
-            {
+                {
                     //Debug.Log("frame-update " + Time.frameCount);
                     var buf = new ByteBuffer(msg[1]);
                     var frame = Frame.GetRootAsFrame(buf);
                     if (OnNewFrame != null)
                         OnNewFrame(frame);
                     break;
-            }
-                
+                }
+
             case ("frame-complete"):
                 //Debug.Log("frame-complete " + Time.frameCount);
                 if (OnCompleteFrame != null)
@@ -139,7 +145,7 @@ public class vrCommClient : MonoBehaviour
                 break;
 
             case ("state-update"):
-               // Debug.Log("state-update " + Time.frameCount);
+                // Debug.Log("state-update " + Time.frameCount);
                 if (OnSimulationUpdate != null)
                 {
                     string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
@@ -162,12 +168,12 @@ public class vrCommClient : MonoBehaviour
                 break;
 
             case ("bonds-update"):
-            {     
+                {
                     if (OnNewBondFrame != null)
                         OnNewBondFrame(System.Text.Encoding.UTF8.GetString(msg[1]));
                     break;
-            }
-                
+                }
+
             case ("bonds-complete"):
                 if (OnCompleteBondFrame != null)
                     OnCompleteBondFrame();
@@ -190,6 +196,144 @@ public class vrCommClient : MonoBehaviour
             default:
                 Debug.Log("Unexpected msg type: " + msgType);
                 break;
+        }
+    }
+
+    //Essentially the original CommClient with added message types.
+    private void ProcessMessage_ForcedFPS()
+    {
+        List<byte[]> msg = null;
+        //bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        bool received;
+        if (!all_bonds_read)
+        {
+            //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
+            //Either we'll get them normally or we will get them eventually once Hoomd starts for the first time.
+            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        }
+        else
+        {
+            //normal execution of program.
+            received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+        }
+
+        if (msg == null || !received)
+        {
+
+            // int fc = Time.frameCount;
+
+            //Debug.Log("Message not received " + Time.frameCount + ", frames since last msg skip: " + (fc - last_msg_not_rec_fc));
+
+            //  last_msg_not_rec_fc = Time.frameCount;
+
+            return;
+        }
+
+        string msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
+        //        Debug.Log("message type: " + msgType + " received at frame " + Time.frameCount);
+
+        switch (msgType)
+        {
+            case ("frame-update"):
+                {
+                    var buf = new ByteBuffer(msg[1]);
+                    var frame = Frame.GetRootAsFrame(buf);
+                    if (OnNewFrame != null)
+                        OnNewFrame(frame);
+
+                    while (true)
+                    {
+                        received = SubClient.TryReceiveMultipartBytes(waitTime_forced, ref msg, 2);
+                        if (!received)
+                        {
+                            // had timeout problem
+                            Application.Quit();
+                            break;
+                        }
+                        // read string
+                        string loc_msgType = System.Text.Encoding.UTF8.GetString(msg[0]);
+                        if (loc_msgType == "frame-complete")
+                        {
+                            updates += 1;
+                            if (OnCompleteFrame != null)
+                                OnCompleteFrame();
+                            break;
+                        }
+                        var _buf = new ByteBuffer(msg[1]);
+                        var _frame = Frame.GetRootAsFrame(_buf);
+                        if (OnNewFrame != null)
+                            OnNewFrame(_frame);
+                    }
+
+                    break;
+                }
+
+            case ("state-update"):
+                // Debug.Log("state-update " + Time.frameCount);
+                if (OnSimulationUpdate != null)
+                {
+                    string jsonString = System.Text.Encoding.UTF8.GetString(msg[1]);
+                    if (jsonString.Length > 0)
+                    {
+                        var values = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
+                        //Debug.Log("values[temp]: " + values["temperature"]);
+                        //Debug.Log("values[dens]: " + values["density"]);
+                        OnSimulationUpdate(values);
+                    }
+                }
+                // now send state update
+                var sendMsg = new NetMQMessage();
+                sendMsg.Append("simulation-update");
+                sendMsg.Append(sendMsgStr);
+                FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
+
+                sendMsgStr = "{}";
+
+                break;
+
+            case ("bonds-update"):
+                {
+                    if (OnNewBondFrame != null)
+                        OnNewBondFrame(System.Text.Encoding.UTF8.GetString(msg[1]));
+                    break;
+                }
+
+            case ("bonds-complete"):
+                if (OnCompleteBondFrame != null)
+                    OnCompleteBondFrame();
+                break;
+
+            case ("names-update"):
+                if (OnNewName != null)
+                    OnNewName(System.Text.Encoding.UTF8.GetString(msg[1]));
+                break;
+
+            case ("names-complete"):
+                if (OnCompleteNames != null)
+                    OnCompleteNames();
+                break;
+            case ("hoomd-startup"):
+                if (OnHoomdStartup != null)
+                    OnHoomdStartup();
+                break;
+
+            default:
+                Debug.Log("Unexpected msg type: " + msgType);
+                break;
+        }
+
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (forceFPSToMatchHoomd)
+        {
+            ProcessMessage_ForcedFPS();
+        } else
+        {
+            ProcessMessage();
         }
     }
 
@@ -225,7 +369,7 @@ public class vrCommClient : MonoBehaviour
         BROKER_IP_ADDRESS = ipInputField.text;
         zmqStartUp();
         Debug.Log("menu done");
-        
+
     }
 
     private void zmqStartUp()
@@ -270,8 +414,10 @@ public class vrCommClient : MonoBehaviour
 
     private void OnApplicationQuit()
     {
+        Debug.Log("app quitting..");
         FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
-        zmqCleanUp();   
+        zmqCleanUp();
+        Debug.Log("after zmq cleanup");
     }
 }
 

@@ -41,7 +41,7 @@ public class PositionQueueManager : MonoBehaviour
 
         vrCC.OnHoomdStartup += PosPrepForNewHoomdSession;
 
-        scale_factor = moleculeSystem.scaleF;
+       // scale_factor = moleculeSystem.scaleF;
 
         positonQueue = new List<Vector3[]>();
     }
@@ -92,7 +92,7 @@ public class PositionQueueManager : MonoBehaviour
                 interpolatedPositions[i] = Vector3.Lerp(positonQueue[0][i], positonQueue[1][i], interpolationProgress);
             }
 
-            moleculeSystem.UpdatePositions(interpolatedPositions);
+           // moleculeSystem.UpdatePositions(interpolatedPositions);
 
             //done interpolating between these two frames.
             if (System.Math.Abs(interpolationProgress - 1.0f) <= 0.01f)
@@ -123,7 +123,7 @@ public class PositionQueueManager : MonoBehaviour
     private void PosProcessNamesComplete()
     {
         //assume every particle has a position - I'm pretty sure this is a safe assumption.
-        num_positions_from_hoomd = moleculeSystem.num_particles_from_hoomd;
+        //num_positions_from_hoomd = moleculeSystem.num_particles_from_hoomd;
 
         tmpPositions = new Vector3[num_positions_from_hoomd];
        // firstPositions = new Vector3[num_positions_from_hoomd];

@@ -92,6 +92,9 @@ public class SceneManager : MonoBehaviour
         } else if (Input.GetKeyDown(KeyCode.N))
         {
             molSystem.InitSpriteMolView();
+        } else if (Input.GetKeyDown(KeyCode.F))
+        {
+            vrCC.forceFPSToMatchHoomd = !vrCC.forceFPSToMatchHoomd;
         }
 
         if (current_active_channel != active_channel)
@@ -110,8 +113,8 @@ public class SceneManager : MonoBehaviour
 		if (active_channel == 2)
 		{
 			molSystem.setScaleF(0.1f);
-            camera.transform.position = new Vector3(0, 1, -19.95f);
-            camera.transform.localRotation = Quaternion.Euler(0, 0, 90);
+            camera.transform.position = new Vector3(0, 1, -19.95f) + cam_pos;
+            //camera.transform.localRotation = Quaternion.Euler(0, 0, 90);
             mainCam.orthographic = true;
             //camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
             env.SetActive(false);
