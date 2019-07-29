@@ -60,7 +60,7 @@ poller.register(instructor, zmq.POLLIN)
 #     "K": "5559"
 # }
 
-for i in range(0, num_sims_requested):
+for i in range(0, int(num_sims_requested)):
     print("starting simulation channel " + str(i) + " of type " + str(num_sims_requested))
 
     #sim_ip = base_ip_address + sim_ports[sim_type_list[i]]
@@ -131,7 +131,7 @@ while True:
         if socks.get(channel_socket) == zmq.POLLIN:
             message = channel_socket.recv_multipart()
             msg_type = message[0]
-            print(str(channels[i].simulation_type) + " --- " + str(msg_type))
+            #print(str(channels[i].simulation_type) + " --- " + str(msg_type))
 
             if msg_type == b'names-update':
                 channels[i].particle_name_messages.append(message)
@@ -141,11 +141,12 @@ while True:
                 channels[i].initialized = True
                 initialized_simulations += 1
                 print("channel of type " + str(channels[i].simulation_type) + " is initialized")  
-                print("num of pnames in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].particle_name_messages)))
+                #print("num of pnames in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].particle_name_messages)))
                 print("number of initialized simulations: " + str(initialized_simulations))
             elif msg_type == b'hoomd-startup':
                 channels[i].reset_init_data()
-                initialized_simulations -= 1
+                if initialized_simulations > 0:
+                    initialized_simulations -= 1
                 #we only need to worry about unity-hoomd communication with the active channel
             elif (i == active_channel and channels[i].initialized):
                 if msg_type == b'state-update':
