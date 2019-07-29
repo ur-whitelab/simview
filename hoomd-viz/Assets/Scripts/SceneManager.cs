@@ -22,6 +22,8 @@ public class SceneManager : MonoBehaviour
 	[SerializeField]
 	private GameObject camera;
     private Camera mainCam;
+    [SerializeField]
+    ParticleSystemRenderer particleSystemRenderer;
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
     private PairSocket PairClient;
@@ -42,6 +44,11 @@ public class SceneManager : MonoBehaviour
 
     public Vector3 cam_pos;
     public Vector3 cam_rot;
+
+    private float pos_step = 1.0f;
+
+    bool in2DView = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -54,51 +61,103 @@ public class SceneManager : MonoBehaviour
 
         mainCam = camera.GetComponent<Camera>();
 
+        particleSystemRenderer.enabled = false;
+
     }
 
     // Update is called once per frame
     void Update()
     {
         int current_active_channel = active_channel;
-        if (Input.GetKeyDown(KeyCode.D))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
             bool canvas_state = DebugCanvas.GetComponent<Canvas>().enabled;
             DebugCanvas.GetComponent<Canvas>().enabled = !canvas_state;
-        } else if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            current_active_channel = 1;
-        } else if (Input.GetKeyDown(KeyCode.Alpha0))
+        } else if (Input.GetKeyDown(KeyCode.A))
         {
             current_active_channel = 0;
-        } else if(Input.GetKeyDown(KeyCode.Alpha2))
+            goTo3DSimView();
+        } else if (Input.GetKeyDown(KeyCode.B))
+        {
+            current_active_channel = 1;
+            goTo3DSimView();
+        } else if(Input.GetKeyDown(KeyCode.C))
         {
             current_active_channel = 2;
-        } else if (Input.GetKeyDown(KeyCode.Alpha3))
+            goTo2DSimView();
+        } else if (Input.GetKeyDown(KeyCode.D))
         {
             current_active_channel = 3;
-        } else if (Input.GetKeyDown(KeyCode.I))
-        {
-            cam_pos = new Vector3(0, 14, 10);
-            camera.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            mainCam.orthographic = true;
-        } else if (Input.GetKeyDown(KeyCode.R))
-        {
-            camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
-            cam_pos = new Vector3(0, 0, 0);
-            mainCam.orthographic = false;
-        } else if (Input.GetKeyDown(KeyCode.M))
-        {
-            molSystem.InitMeshMolView();
-        } else if (Input.GetKeyDown(KeyCode.N))
-        {
-            molSystem.InitSpriteMolView();
-        } else if (Input.GetKeyDown(KeyCode.F))
+        } 
+        else if (Input.GetKeyDown(KeyCode.M))
         {
             vrCC.forceFPSToMatchHoomd = !vrCC.forceFPSToMatchHoomd;
+        }
+        else if (Input.GetKeyDown(KeyCode.O))
+        {
+            goTo2DSimView();
+        }
+        else if (Input.GetKeyDown(KeyCode.P))
+        {
+            SwapRenderers();
+        }
+        else if (Input.GetKeyDown(KeyCode.W))
+        {
+            mainCam.orthographicSize += 5.0f;
+            mainCam.fieldOfView += 5.0f;
+        }
+        else if (Input.GetKeyDown(KeyCode.S))
+        {
+            mainCam.orthographicSize -= 5.0f;
+            mainCam.fieldOfView -= 5.0f;
+        }
+        else if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (in2DView)
+            {
+                goTo3DSimView();
+            }
+            else
+            {
+                goTo2DSimView();
+            }
+        }
+        else if (Input.GetKeyDown(KeyCode.R))
+        {
+            if (in2DView)
+            {
+                goTo2DSimView();
+            } else
+            {
+                goTo3DSimView();
+            }
+            
+        }
+        else if (Input.GetKeyDown(KeyCode.Z))
+        {
+            mainCam.orthographicSize = 35.0f;//reset only the zoom level;
+            mainCam.fieldOfView = 60;
+        } else if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            camera.transform.position += new Vector3(0.0f,pos_step,0.0f);
+        }
+        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            camera.transform.position -= new Vector3(0.0f, pos_step, 0.0f);
+        }
+        else if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            camera.transform.position += new Vector3(pos_step, 0.0f, 0.0f);
+        }
+        else if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            camera.transform.position -= new Vector3(pos_step, 0.0f, 0.0f);
         }
 
         if (current_active_channel != active_channel)
         {
+            vrCC.forceFPSToMatchHoomd = false;
+
             var sendMsg = new NetMQMessage();
             sendMsg.Append("ac-change");
             sendMsg.Append(current_active_channel.ToString());
@@ -108,22 +167,6 @@ public class SceneManager : MonoBehaviour
                 active_channel = current_active_channel;
                 Debug.Log("switched ac to " + current_active_channel);
             }
-        }
-        //generalize this eventually
-		if (active_channel == 2)
-		{
-			molSystem.setScaleF(0.1f);
-            camera.transform.position = new Vector3(0, 1, -19.95f) + cam_pos;
-            //camera.transform.localRotation = Quaternion.Euler(0, 0, 90);
-            mainCam.orthographic = true;
-            //camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
-            env.SetActive(false);
-		} else
-		{
-			molSystem.setScaleF(0.35f);
-            camera.transform.position = new Vector3(0, 3, -10) + cam_pos;
-            //camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
-            env.SetActive(true);
         }
 
         //User inputs that are Unity side and don't need to be sent to the broker.
@@ -167,6 +210,42 @@ public class SceneManager : MonoBehaviour
         //- switch active channel
     }
     //parses debug string from broker and populates sim_list and client_list
+
+    private void SwapRenderers()
+    {
+        bool pRend = particleSystemRenderer.enabled;
+        particleSystemRenderer.enabled = !pRend;
+        molSystem.ToggleMeshView(pRend);
+    }
+
+    private void goTo2DSimView()
+    {
+        camera.transform.position = new Vector3(0, 1, -19.95f) + cam_pos;
+        camera.transform.localRotation = Quaternion.Euler(90, 0, 0);
+        mainCam.orthographic = true;
+        mainCam.orthographicSize = 35.0f;
+        env.SetActive(false);
+
+        particleSystemRenderer.enabled = true;
+        molSystem.ToggleMeshView(false);
+        in2DView = true;
+    }
+
+    private void goTo3DSimView()
+    {
+        molSystem.setScaleF(0.35f);
+        camera.transform.position = new Vector3(0, 3, -10) + cam_pos;
+        camera.transform.localRotation = Quaternion.Euler(0, 0, 0);
+        mainCam.orthographic = false;
+        mainCam.fieldOfView = 60;
+       // mainCam.orthographicSize = 35.0f;
+        env.SetActive(true);
+
+        particleSystemRenderer.enabled = false;
+        molSystem.ToggleMeshView(true);
+        in2DView = false;
+    }
+
     private void parseDebugStringToLists(string full_debug_string)
     {
         sim_channel_data_list.Clear();
@@ -256,5 +335,6 @@ public class SceneManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         cleanUpInstructorSocket();
+
     }
 }

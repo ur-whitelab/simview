@@ -65,12 +65,13 @@ public class vrCommClient : MonoBehaviour
     bool zmq_initialized = false;
 
     //this will always be false for VR views but the instructor view has the ability to enable it.
-    public bool forceFPSToMatchHoomd = false;
+    public bool forceFPSToMatchHoomd;
     private int updates = 0;
 
     // Start is called before the first frame update
     void Start()
     {
+        forceFPSToMatchHoomd = false;
 
         client_id = SystemInfo.deviceUniqueIdentifier;
 
@@ -259,10 +260,14 @@ public class vrCommClient : MonoBehaviour
                                 OnCompleteFrame();
                             break;
                         }
-                        var _buf = new ByteBuffer(msg[1]);
-                        var _frame = Frame.GetRootAsFrame(_buf);
-                        if (OnNewFrame != null)
-                            OnNewFrame(_frame);
+                        if (loc_msgType == "frame-update")
+                        {
+                            var _buf = new ByteBuffer(msg[1]);
+                            var _frame = Frame.GetRootAsFrame(_buf);
+                            if (OnNewFrame != null)
+                                OnNewFrame(_frame);
+                        }
+                       
                     }
 
                     break;

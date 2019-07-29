@@ -15,7 +15,6 @@ public class MoleculeSystemGPU : MonoBehaviour
     private vrCommClient cc;
 
     private Transform[] moleculeTransforms;
-    private Transform[] molTransforms_Sprites;
     private Vector3[] frameUpdatePositions;
     private bool[] activeMolecules;
 
@@ -97,23 +96,19 @@ public class MoleculeSystemGPU : MonoBehaviour
         for (int i = 0; i < num_positions_from_hoomd; i++)
         {
             moleculeTransforms[i].position = frameUpdatePositions[i];
-            molTransforms_Sprites[i].position = frameUpdatePositions[i];
 
             if (max_particle_position.magnitude < frameUpdatePositions[i].magnitude)
             {
                 max_particle_position = frameUpdatePositions[i];
-                Debug.Log("max_particle_position mag: " + max_particle_position.magnitude);
             }
 
             if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
             {
                 moleculeTransforms[i].gameObject.SetActive(false);
-                molTransforms_Sprites[i].gameObject.SetActive(false);
             }
             else
             {
                 moleculeTransforms[i].gameObject.SetActive(mesh_rend);
-                molTransforms_Sprites[i].gameObject.SetActive(!mesh_rend);
             }
         }
 
@@ -130,13 +125,13 @@ public class MoleculeSystemGPU : MonoBehaviour
         total_fps_sum += delta_fps;
         float avg_fps = total_fps_sum / num_graphics_updates;
 
-        if (Mathf.Abs(delta_fps - avg_fps) >= 10.0f)
-        {
-            Debug.Log("average fps: " + avg_fps);
-            Debug.Log("frames since last graphics update: " + frame_delta);
-            Debug.Log("seconds since last graphics update: " + time_delta);
-            Debug.Log("graphics fps: " + delta_fps);
-        }
+        // (Mathf.Abs(delta_fps - avg_fps) >= 10.0f)
+       //
+         // Debug.Log("average fps: " + avg_fps);
+        // Debug.Log("frames since last graphics update: " + frame_delta);
+       //   Debug.Log("seconds since last graphics update: " + time_delta);
+       //   Debug.Log("graphics fps: " + delta_fps);
+       //
 
         last_graphics_update_time = Time.time;
         last_graphics_update_frameCount = Time.frameCount;
@@ -227,7 +222,6 @@ public class MoleculeSystemGPU : MonoBehaviour
             for (int i = 0; i < moleculeTransforms.Length; i++)
             {
                 Destroy(moleculeTransforms[i].gameObject);
-                Destroy(molTransforms_Sprites[i].gameObject);
             }
         }
 
@@ -238,7 +232,6 @@ public class MoleculeSystemGPU : MonoBehaviour
         }
 
         moleculeTransforms = new Transform[num_positions_from_hoomd];
-        molTransforms_Sprites = new Transform[num_positions_from_hoomd];
         frameUpdatePositions = new Vector3[num_positions_from_hoomd];
         activeMolecules = new bool[num_positions_from_hoomd];
 
@@ -258,10 +251,6 @@ public class MoleculeSystemGPU : MonoBehaviour
             moleculeTransforms[i] = Instantiate(atomPrefab);
             moleculeTransforms[i].position = transform.position;
             moleculeTransforms[i].SetParent(transform);
-
-            molTransforms_Sprites[i] = Instantiate(atomPrefabSprite);
-            molTransforms_Sprites[i].position = transform.position;
-            molTransforms_Sprites[i].SetParent(transform);
 
             switch (particleNames[i])
             {
@@ -312,7 +301,6 @@ public class MoleculeSystemGPU : MonoBehaviour
                 }
             }
             moleculeTransforms[i].gameObject.SetActive(false);
-            molTransforms_Sprites[i].gameObject.SetActive(false);
 
         }
         //MaterialPropertyBlock bond_properties = new MaterialPropertyBlock();
@@ -415,35 +403,13 @@ public class MoleculeSystemGPU : MonoBehaviour
         return max_particle_position;
     }
 
-    public void InitSpriteMolView()
+    public void ToggleMeshView(bool _mrend)
     {
-        mesh_rend = false;
-        if (molTransforms_Sprites.Length != moleculeTransforms.Length)
+        mesh_rend = _mrend;
+        for (int i = 0; i < moleculeTransforms.Length; i++)
         {
-            Debug.Log("sprite and mesh transforms not equal!");
-
-        }
-
-        for (int i = 0; i < molTransforms_Sprites.Length; i++)
-        {
-            molTransforms_Sprites[i].gameObject.SetActive(true);
-            moleculeTransforms[i].gameObject.SetActive(false);
+            moleculeTransforms[i].gameObject.SetActive(mesh_rend);
         }
     }
 
-    public void InitMeshMolView()
-    {
-        mesh_rend = true;
-        if (molTransforms_Sprites.Length != moleculeTransforms.Length)
-        {
-            Debug.Log("sprite and mesh transforms not equal!");
-
-        }
-
-        for (int i = 0; i < molTransforms_Sprites.Length; i++)
-        {
-            molTransforms_Sprites[i].gameObject.SetActive(false);
-            moleculeTransforms[i].gameObject.SetActive(true);
-        }
-    }
 }

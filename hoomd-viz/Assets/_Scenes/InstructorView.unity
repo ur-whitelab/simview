@@ -1823,7 +1823,7 @@ ParticleSystem:
     flipU: 0
     flipV: 0
   VelocityModule:
-    enabled: 1
+    enabled: 0
     x:
       serializedVersion: 2
       minMaxState: 0
@@ -2409,7 +2409,7 @@ ParticleSystem:
         m_RotationOrder: 4
     inWorldSpace: 0
   InheritVelocityModule:
-    enabled: 1
+    enabled: 0
     m_Mode: 0
     m_Curve:
       serializedVersion: 2
@@ -5739,9 +5739,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6effb08cb0b4c43c6bac257a86317694, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TemperatureText: {fileID: 134286996}
-  DensityText: {fileID: 1764690402}
-  PressureText: {fileID: 2032824442}
+  TemperatureText: {fileID: 0}
+  DensityText: {fileID: 0}
+  PressureText: {fileID: 0}
 --- !u!114 &382307147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6358,9 +6358,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6effb08cb0b4c43c6bac257a86317694, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TemperatureText: {fileID: 134286996}
-  DensityText: {fileID: 1764690402}
-  PressureText: {fileID: 2032824442}
+  TemperatureText: {fileID: 134286995}
+  DensityText: {fileID: 1764690401}
+  PressureText: {fileID: 2032824441}
 --- !u!1 &621666387
 GameObject:
   m_ObjectHideFlags: 0
@@ -8738,6 +8738,7 @@ MonoBehaviour:
   simInterface: {fileID: 620243504}
   env: {fileID: 1639382449}
   camera: {fileID: 1764287207}
+  particleSystemRenderer: {fileID: 6825612}
   clientCanvasList:
   - {fileID: 645300601}
   - {fileID: 255863478}
