@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using HZMsg;
 
 public class MoleculeSystemGPU : MonoBehaviour
@@ -13,10 +14,14 @@ public class MoleculeSystemGPU : MonoBehaviour
     private Transform bondPrefab;
     [SerializeField]
     private vrCommClient cc;
+    [SerializeField]
+    private InputField atomInputField;
 
     private Transform[] moleculeTransforms;
     private Vector3[] frameUpdatePositions;
     private bool[] activeMolecules;
+    private bool[] isolateMols;
+    //private Vector3[] localAtomScales;
 
     private int num_positions_from_hoomd = 0;
     private int num_particles_from_hoomd = 0;
@@ -108,7 +113,7 @@ public class MoleculeSystemGPU : MonoBehaviour
             }
             else
             {
-                moleculeTransforms[i].gameObject.SetActive(mesh_rend);
+                moleculeTransforms[i].gameObject.SetActive(isolateMols[i]);
             }
         }
 
@@ -235,6 +240,14 @@ public class MoleculeSystemGPU : MonoBehaviour
         moleculeTransforms = new Transform[num_positions_from_hoomd];
         frameUpdatePositions = new Vector3[num_positions_from_hoomd];
         activeMolecules = new bool[num_positions_from_hoomd];
+        isolateMols = new bool[num_positions_from_hoomd];
+     //   localAtomScales = new Vector3[num_positions_from_hoomd];
+
+        for (int i = 0; i < isolateMols.Length; i++)
+        {
+            isolateMols[i] = true;
+        }
+
 
         if (num_particles_from_hoomd == 0)
         {
@@ -269,13 +282,16 @@ public class MoleculeSystemGPU : MonoBehaviour
 
                 default:
                     {
+                        //moleculeTransforms[i]
                         Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
                         moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;
-                        properties.SetColor("_Color", Color.red);
+                        properties.SetColor("_Color", Color.clear);
                         break;
                     }
 
             }
+
+        //    localAtomScales[i] = moleculeTransforms[i].localScale;
 
             MeshRenderer r = moleculeTransforms[i].GetComponent<MeshRenderer>();
             if (r)
@@ -372,6 +388,88 @@ public class MoleculeSystemGPU : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void isolateAtoms()
+    {
+        string range_of_atoms = atomInputField.text;
+        Debug.Log("roa: " + range_of_atoms);
+        if (range_of_atoms == ".")
+        {
+            //enable all of them
+            for (int i = 0; i < moleculeTransforms.Length; i++)
+            {
+                //moleculeTransforms[i].gameObject.transform.localScale = localAtomScales[i];
+                moleculeTransforms[i].gameObject.SetActive(true);
+                isolateMols[i] = true;
+            }
+
+        } else
+        {
+            string[] _atoms = range_of_atoms.Split('-');
+            int _a_idx = 0;
+            int a1_idx = 0;
+            int a2_idx = 0;
+            bool a1_parse = false;
+            bool a2_parse = false;
+            foreach (string a in _atoms)
+            {
+                if (_a_idx == 0)
+                {
+                    a1_parse = int.TryParse(a, out a1_idx);
+
+                } else
+                {
+                    a2_parse = int.TryParse(a, out a2_idx);
+                }
+                _a_idx++;
+            }
+                //should just be two
+                if (_atoms.Length != 2)
+            {
+                Debug.Log("range of atoms length: " + range_of_atoms.Length);
+            }
+            
+            
+
+            if (a1_parse && a2_parse)
+            {
+                int max_idx = Mathf.Max(a1_idx, a2_idx);
+                if (max_idx >= moleculeTransforms.Length)
+                {
+                    return;
+                }
+                int min_idx = 0;
+                if (a1_idx == max_idx)
+                {
+                    min_idx = a2_idx;
+                } else
+                {
+                    min_idx = a1_idx;
+                }
+
+                for (int i = 0; i < moleculeTransforms.Length; i++)
+                {
+                    if (i >= min_idx && i <= max_idx)
+                    {
+                        isolateMols[i] = true;
+                       // moleculeTransforms[i].localScale = localAtomScales[i] * 4;
+                       // moleculeTransforms[i].gameObject.SetActive(true);
+                    } else
+                    {
+                        isolateMols[i] = false;
+                       // moleculeTransforms[i].gameObject.SetActive(false);
+                    }
+                }
+
+
+            }
+            else
+            {
+                Debug.Log("couldn't parse inputs");
+            }
+        }
+
     }
 
     public void SetPosOffset(Vector3 touchDelta)

@@ -22,8 +22,8 @@ public class SceneManager : MonoBehaviour
 	[SerializeField]
 	private GameObject camera;
     private Camera mainCam;
-    [SerializeField]
-    ParticleSystemRenderer particleSystemRenderer;
+    //[SerializeField]
+    //ParticleSystemRenderer particleSystemRenderer;
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
     private PairSocket PairClient;
@@ -45,7 +45,7 @@ public class SceneManager : MonoBehaviour
     public Vector3 cam_pos;
     public Vector3 cam_rot;
 
-    private float pos_step = 1.0f;
+    private float pos_step = 0.3f;
 
     bool in2DView = false;
 
@@ -61,7 +61,7 @@ public class SceneManager : MonoBehaviour
 
         mainCam = camera.GetComponent<Camera>();
 
-        particleSystemRenderer.enabled = false;
+     //   particleSystemRenderer.enabled = false;
 
     }
 
@@ -88,40 +88,44 @@ public class SceneManager : MonoBehaviour
         } else if (Input.GetKeyDown(KeyCode.D))
         {
             current_active_channel = 3;
-        } 
-        else if (Input.GetKeyDown(KeyCode.M))
-        {
-            vrCC.forceFPSToMatchHoomd = !vrCC.forceFPSToMatchHoomd;
         }
-        else if (Input.GetKeyDown(KeyCode.O))
+        else if (Input.GetKeyDown(KeyCode.D))
         {
-            goTo2DSimView();
+            current_active_channel = 4;
         }
-        else if (Input.GetKeyDown(KeyCode.P))
-        {
-            SwapRenderers();
-        }
-        else if (Input.GetKeyDown(KeyCode.W))
+        //else if (Input.GetKeyDown(KeyCode.M))
+        //{
+        //    vrCC.forceFPSToMatchHoomd = !vrCC.forceFPSToMatchHoomd;
+        //}
+        //else if (Input.GetKeyDown(KeyCode.O))
+        //{
+        //    goTo2DSimView();
+        //}
+        //else if (Input.GetKeyDown(KeyCode.P))
+        //{
+        //    SwapRenderers();
+        //}
+        else if (Input.GetKeyDown(KeyCode.S))
         {
             mainCam.orthographicSize += 5.0f;
             mainCam.fieldOfView += 5.0f;
         }
-        else if (Input.GetKeyDown(KeyCode.S))
+        else if (Input.GetKeyDown(KeyCode.W))
         {
             mainCam.orthographicSize -= 5.0f;
             mainCam.fieldOfView -= 5.0f;
         }
-        else if (Input.GetKeyDown(KeyCode.T))
-        {
-            if (in2DView)
-            {
-                goTo3DSimView();
-            }
-            else
-            {
-                goTo2DSimView();
-            }
-        }
+        //else if (Input.GetKeyDown(KeyCode.T))
+        //{
+        //    if (in2DView)
+        //    {
+        //        goTo3DSimView();
+        //    }
+        //    else
+        //    {
+        //        goTo2DSimView();
+        //    }
+        //}
         else if (Input.GetKeyDown(KeyCode.R))
         {
             if (in2DView)
@@ -137,21 +141,28 @@ public class SceneManager : MonoBehaviour
         {
             mainCam.orthographicSize = 35.0f;//reset only the zoom level;
             mainCam.fieldOfView = 60;
-        } else if (Input.GetKeyDown(KeyCode.UpArrow))
+        } else if (Input.GetKeyDown(KeyCode.K))
         {
             camera.transform.position += new Vector3(0.0f,pos_step,0.0f);
         }
-        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        else if (Input.GetKeyDown(KeyCode.L))
         {
             camera.transform.position -= new Vector3(0.0f, pos_step, 0.0f);
         }
-        else if (Input.GetKeyDown(KeyCode.LeftArrow))
+        else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             camera.transform.position += new Vector3(pos_step, 0.0f, 0.0f);
         }
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
+        else if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             camera.transform.position -= new Vector3(pos_step, 0.0f, 0.0f);
+        } else if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            camera.transform.position += new Vector3(0.0f, 0.0f, pos_step);
+        }
+        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            camera.transform.position -= new Vector3(0.0f, 0.0f, pos_step);
         }
 
         if (current_active_channel != active_channel)
@@ -211,12 +222,12 @@ public class SceneManager : MonoBehaviour
     }
     //parses debug string from broker and populates sim_list and client_list
 
-    private void SwapRenderers()
-    {
-        bool pRend = particleSystemRenderer.enabled;
-        particleSystemRenderer.enabled = !pRend;
-        molSystem.ToggleMeshView(pRend);
-    }
+    //private void SwapRenderers()
+    //{
+    //    bool pRend = particleSystemRenderer.enabled;
+    //    particleSystemRenderer.enabled = !pRend;
+    //    molSystem.ToggleMeshView(pRend);
+    //}
 
     private void goTo2DSimView()
     {
@@ -226,7 +237,7 @@ public class SceneManager : MonoBehaviour
         mainCam.orthographicSize = 35.0f;
         env.SetActive(false);
 
-        particleSystemRenderer.enabled = true;
+       // particleSystemRenderer.enabled = true;
         molSystem.ToggleMeshView(false);
         in2DView = true;
     }
@@ -241,7 +252,7 @@ public class SceneManager : MonoBehaviour
        // mainCam.orthographicSize = 35.0f;
         env.SetActive(true);
 
-        particleSystemRenderer.enabled = false;
+      //  particleSystemRenderer.enabled = false;
         molSystem.ToggleMeshView(true);
         in2DView = false;
     }
