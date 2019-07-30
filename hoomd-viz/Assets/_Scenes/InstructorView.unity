@@ -312,7 +312,7 @@ MonoBehaviour:
 --- !u!199 &6825612
 ParticleSystemRenderer:
   serializedVersion: 6
-  m_ObjectHideFlags: 2
+  m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -6854,7 +6854,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://10.5.6.31:'
+  BROKER_IP_ADDRESS: 'tcp://localhost:'
   ipCanvas: {fileID: 755554476}
   ipInputField: {fileID: 905085582}
   client_id: 0

@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://10.5.6.31:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -422,7 +422,6 @@ public class vrCommClient : MonoBehaviour
         Debug.Log("app quitting..");
         FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
         zmqCleanUp();
-        Debug.Log("after zmq cleanup");
     }
 }
 

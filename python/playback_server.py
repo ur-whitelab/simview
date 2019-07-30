@@ -3,9 +3,21 @@ import HZMsg.Scalar4 as scalar4
 import zmq, flatbuffers, time
 import sys
 import pickle
+import time
 
-port = int(sys.argv[1])
-packet_save_file_path = 'playback_frames.p'
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument('-f', '--file', dest='filename',
+                    help='write report to FILE', metavar='FILE')
+parser.add_argument('-p', '--port', dest='port',
+                    help='set port', metavar='PORT')
+args = parser.parse_args()
+
+#port = int(sys.argv[1])
+#packet_save_file_path = 'playback_frames.p'
+port = args.port
+packet_save_file_path = args.filename
 
 context = zmq.Context()
 sock = context.socket(zmq.PAIR)
@@ -32,43 +44,35 @@ for b_msg in playback_dict['bonds']:
 sock.send_multipart([b'bonds-complete', b'none'])
 
 while True:
+    start_time = time.time()
+
+    position_bufs = playback_dict[str(frame_idx)]
+    for buf in position_bufs:
+        f = frame.Frame.GetRootAsFrame(buf, 0)
+        num_positions = f.PositionsLength()
+        _n = f.N()
+        _i = f.I()
+        #print(_n, _i)
+        sock.send_multipart([b'frame-update',buf])
     
-    buf = playback_dict[str(frame_idx)]
-    
-    f = frame.Frame.GetRootAsFrame(buf, 0)
-    num_positions = f.PositionsLength()
-    print('num positions: ' + str(num_positions))
+    sock.send_multipart([b'frame-complete', b'none'])
 
-    # builder = flatbuffers.Builder(0)
-    # frame.FrameStartPositionsVector(builder, N)
-    # for i in range(N):
-    #     pos = f.Positions(i)
-    #     scalar4.CreateScalar4(builder, pos.X(), pos.Y(), pos.Z(), pos.W())
-    # positions = builder.EndVector(N)
-    # frame.FrameStart(builder)
-    # frame.FrameAddN(builder, N)
-    # frame.FrameAddI(builder, j)
-    # frame.FrameAddPositions(builder, positions)
-    # builder.Finish(frame.FrameEnd(builder))
-    # buffer = builder.Output()
-    #sock.send_multipart(['frame-update'.encode(), buffer])
+    if (frame_idx % 10 == 0 and frame_idx != 0):
+        su = playback_dict['state-updates'][str(frame_idx)]
 
-    _n = f.N()
-    _i = f.I()
-
-    if (frame_idx != 0 and f.I() == 0):
-        sock.send_multipart([b'frame-complete', b'none'])
-    else:
-        sock.send_multipart([b'frame-update', buf])
-
-    print('frame: ' + str(frame_idx))
-    print(_n, _i)
-
+    #print('frame: ' + str(frame_idx))
     frame_idx += 1
 
-    time.sleep(1)
-    sys.stdout.flush()
+    #if we reach the end of the playback, loop it.
+    if (playback_dict['num_frames'] == frame_idx):
+        frame_idx = 0
 
-    j += N
-    j %= 10000
+    #time.sleep(0.1)
+    fps = 1.0 / (time.time() - start_time)
+    while (fps > 60):
+        fps = 1.0 / (time.time() - start_time)
+        
+
+    #sys.stdout.flush()
+
 

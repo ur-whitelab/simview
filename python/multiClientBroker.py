@@ -13,11 +13,13 @@ base_ip_address = "tcp://localhost:"
 
 sim_type_list = []
 
+print("sa1: " + str(sys.argv[1]))
+
 if (len(sys.argv)== 1):
-    print("No simulations requested! Defaulting just to liquid.")
-    sim_type_list = ["liquid"]
+    print("No simulations requested! Defaulting just to A.")
+    sim_type_list = ["A"]
 else:
-    sim_type_list = sys.argv[:1]
+    sim_type_list = sys.argv[1:]
 
 active_channel = 0
 next_active_channel = 0
@@ -47,10 +49,13 @@ poller.register(instructor, zmq.POLLIN)
 #poller.register(backend, zmq.POLLIN)
 
 sim_ports = {
-    "liquid": "5550",
-    "solid": "5551",
-    "gas": "5552"
+    "A": "5550",
+    "B": "5551",
+    "C": "5552",
+    "D": "5553"
 }
+
+print(sim_type_list)
 
 for i in range(0, len(sim_type_list)):
     print("starting simulation channel " + str(i) + " of type " + str(sim_type_list[i]))
@@ -120,7 +125,7 @@ while True:
         if socks.get(channel_socket) == zmq.POLLIN:
             message = channel_socket.recv_multipart()
             msg_type = message[0]
-            print(str(channels[i].simulation_type) + " --- " + str(msg_type))
+            #print(str(channels[i].simulation_type) + " --- " + str(msg_type))
             if msg_type == b'names-update':
                 channels[i].particle_name_messages.append(message)
             elif msg_type == b'bonds-update':
@@ -191,7 +196,6 @@ while True:
     if socks.get(instructor) == zmq.POLLIN:
         message = instructor.recv_multipart()
         msg_id = message[0]
-
         if msg_id == b"first-msg-instructor":
             instructor_client_id = message[1]
             isInstructorConnected = True

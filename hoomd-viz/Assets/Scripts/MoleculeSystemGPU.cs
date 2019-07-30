@@ -256,19 +256,11 @@ public class MoleculeSystemGPU : MonoBehaviour
             switch (particleNames[i])
             {
                 case ("tip3p_H"):
-                    if (i == 999)
-                    {
-                        Debug.Log(" part 999 name: " + particleNames[i] + "hy");
-                    }
                     properties.SetColor("_Color", Color.gray);
                     break;
 
                 case ("tip3p_O"):
                     {
-                        if (i == 999)
-                        {
-                            Debug.Log(" part 999 name: " + particleNames[i] + " oxy ");
-                        }
                         properties.SetColor("_Color", Color.red);
                         Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
                         moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
