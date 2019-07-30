@@ -266,6 +266,8 @@ public class MoleculeSystemGPU : MonoBehaviour
             moleculeTransforms[i].position = transform.position;
             moleculeTransforms[i].SetParent(transform);
 
+//            Debug.Log("pnames: " + particleNames[i]);
+
             switch (particleNames[i])
             {
                 case ("tip3p_H"):
@@ -275,6 +277,33 @@ public class MoleculeSystemGPU : MonoBehaviour
                 case ("tip3p_O"):
                     {
                         properties.SetColor("_Color", Color.red);
+                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+                        break;
+                    }
+                case ("opls_157"):
+                    {
+                        properties.SetColor("_Color", Color.black);
+                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+                        break;
+                    }
+                case ("opls_156"):
+                    {
+                        properties.SetColor("_Color", Color.gray);
+                        break;
+                    }
+                    
+                case ("opls_154"):
+                    {
+                        properties.SetColor("_Color", Color.red);
+                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
+                        break;
+                    }
+                case ("opls_155"):
+                    {
+                        properties.SetColor("_Color", Color.grey);
                         Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
                         moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
                         break;
@@ -393,7 +422,7 @@ public class MoleculeSystemGPU : MonoBehaviour
     public void isolateAtoms()
     {
         string range_of_atoms = atomInputField.text;
-        Debug.Log("roa: " + range_of_atoms);
+        //inDebug.Log("roa: " + range_of_atoms);
         if (range_of_atoms == ".")
         {
             //enable all of them

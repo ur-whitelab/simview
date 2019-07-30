@@ -25,7 +25,7 @@ public class SceneManager : MonoBehaviour
     //[SerializeField]
     //ParticleSystemRenderer particleSystemRenderer;
 
-    private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
+    private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 5);
     private PairSocket PairClient;
 
     List<string[]> sim_channel_data_list;
@@ -76,15 +76,16 @@ public class SceneManager : MonoBehaviour
         } else if (Input.GetKeyDown(KeyCode.A))
         {
             current_active_channel = 0;
-            goTo3DSimView();
+           // goTo3DSimView();
         } else if (Input.GetKeyDown(KeyCode.B))
         {
             current_active_channel = 1;
-            goTo3DSimView();
+            //Debug.Log("B");
+           // goTo3DSimView();
         } else if(Input.GetKeyDown(KeyCode.C))
         {
             current_active_channel = 2;
-            goTo2DSimView();
+            //goTo2DSimView();
         } else if (Input.GetKeyDown(KeyCode.D))
         {
             current_active_channel = 3;
@@ -93,10 +94,10 @@ public class SceneManager : MonoBehaviour
         {
             current_active_channel = 4;
         }
-        //else if (Input.GetKeyDown(KeyCode.M))
-        //{
-        //    vrCC.forceFPSToMatchHoomd = !vrCC.forceFPSToMatchHoomd;
-        //}
+        else if (Input.GetKeyDown(KeyCode.M))
+        {
+            vrCC.forceFPSToMatchHoomd = !vrCC.forceFPSToMatchHoomd;
+        }
         //else if (Input.GetKeyDown(KeyCode.O))
         //{
         //    goTo2DSimView();
@@ -175,8 +176,10 @@ public class SceneManager : MonoBehaviour
             bool r = PairClient.TrySendMultipartMessage(waitTime, sendMsg);
             if (r)
             {
+                vrCC.zmqCycleDown();
                 active_channel = current_active_channel;
                 Debug.Log("switched ac to " + current_active_channel);
+                vrCC.zmqUp();
             }
         }
 

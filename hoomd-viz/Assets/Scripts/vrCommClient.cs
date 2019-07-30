@@ -68,6 +68,8 @@ public class vrCommClient : MonoBehaviour
     public bool forceFPSToMatchHoomd;
     private int updates = 0;
 
+    private int frame_num = 0;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -340,6 +342,14 @@ public class vrCommClient : MonoBehaviour
         {
             ProcessMessage();
         }
+
+        //if (frame_num % 100 == 0)
+        //{
+        //    zmqCycleDown();
+        //    zmqUp();
+        //}
+
+        frame_num++;
     }
 
     public void setAllBondsRead(bool b)
@@ -407,15 +417,32 @@ public class vrCommClient : MonoBehaviour
 
         zmq_initialized = false;
     }
-//#if UNITY_ANDROID
 
-//    private void OnApplicationPause(bool pause)
-//    {
-//        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
-//        zmqCleanUp();
-//    }
+    public void zmqCycleDown()
+    {
+        SubClient.Close();
+        SubClient.Dispose();
+    }
 
-//#endif
+    public void zmqUp()
+    {
+        string downstream_port_address = BROKER_IP_ADDRESS + "5572";
+
+        SubClient = new SubscriberSocket();
+        SubClient.Connect(downstream_port_address);
+        SubClient.SubscribeToAnyTopic();
+        Debug.Log("Subscriber Socket connected on " + downstream_port_address);
+        PlayerPrefs.SetString("IPAddress", BROKER_IP_ADDRESS);
+    }
+    //#if UNITY_ANDROID
+
+    //    private void OnApplicationPause(bool pause)
+    //    {
+    //        FrameClient.SendFrame(System.Text.Encoding.UTF8.GetBytes("last-msg"));
+    //        zmqCleanUp();
+    //    }
+
+    //#endif
 
     private void OnApplicationQuit()
     {
