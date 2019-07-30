@@ -54,7 +54,7 @@ while True:
         _i = f.I()
         #print(_n, _i)
         sock.send_multipart([b'frame-update',buf])
-    
+
     sock.send_multipart([b'frame-complete', b'none'])
 
     if (frame_idx % 10 == 0 and frame_idx != 0):
@@ -67,11 +67,14 @@ while True:
     if (playback_dict['num_frames'] == frame_idx):
         frame_idx = 0
 
-    #time.sleep(0.1)
-    fps = 1.0 / (time.time() - start_time)
-    while (fps > 60):
+    #time.sleep(0.1)\
+    if (time.time() - start_time >= 0.0001):
         fps = 1.0 / (time.time() - start_time)
-        
+        while (fps > 80):
+            fps = 1.0 / (time.time() - start_time)
+
+
+
 
     #sys.stdout.flush()
 

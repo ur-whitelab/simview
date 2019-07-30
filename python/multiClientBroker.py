@@ -133,7 +133,7 @@ while True:
             elif msg_type == b'bonds-complete':
                 channels[i].initialized = True
                 initialized_simulations += 1
-                print("channel of type " + str(channels[i].simulation_type) + " is initialized")  
+                print("channel of type " + str(channels[i].simulation_type) + " is initialized")
                 print("num of name messages in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].particle_name_messages)))
                 print("num of bond messages in channel " + str(i) + " of type " + str(channels[i].simulation_type) + ": " + str(len(channels[i].bond_messages)))
                 print("number of initialized simulations: " + str(initialized_simulations))
@@ -144,7 +144,7 @@ while True:
                 #we only need to worry about unity-hoomd communication with the active channel
             elif (i == active_channel and channels[i].initialized):
                 if msg_type == b'state-update':
-                    expecting_state_update = True   
+                    expecting_state_update = True
                 publisher.send_multipart(message)
 
     #check that each client is aware of the current active channel
@@ -164,7 +164,7 @@ while True:
         #First element is client id, 2nd is message type.
         client_id = message[0]
         msg_type = message[1]
-        
+
         # if next_active_channel != active_channel:
         #     msg_type = 'hoomd-startup'
 
@@ -174,16 +174,16 @@ while True:
             if (channels[active_channel].initialized):
                 send_init_data_to_client(client_id)
                 client_dict[client_id].initialized = True
-            
+
             print(str(len(client_dict)) + " client(s) connected")
 
         elif msg_type == b'last-msg':
-            if (client_id in client_id.keys()):
+            if (client_id in client_dict.keys()):
                 del client_dict[client_id]
                 print(str(client_id) + " is disconnected.")
                 print(str(len(client_dict)) + " client(s) connected")
             else:
-                print("Trying to disconnect client "str(client_id) + " which is already disconnected.")
+                print("Trying to disconnect client " + str(client_id) + " which is already disconnected.")
 
 
         elif msg_type == b'simulation-update':
@@ -211,7 +211,7 @@ while True:
             active_channel = int(message[1])
             publisher.send_multipart([b"hoomd-startup",b"tmp"])
             channels[active_channel].socket.send_multipart([b'simulation-update', bytes(default_state_update, 'utf-8')])
-        
+
 
     #send debug info to the instructor.
     if frame_count % 10 == 0 and isInstructorConnected:
@@ -251,5 +251,4 @@ while True:
 
 
 
-                    
-        
+
