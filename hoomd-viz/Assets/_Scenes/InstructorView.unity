@@ -6854,7 +6854,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://localhost:'
+  BROKER_IP_ADDRESS: 'tcp://ar-table.che.rochester.edu:'
   ipCanvas: {fileID: 755554476}
   ipInputField: {fileID: 905085582}
   client_id: 0

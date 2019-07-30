@@ -18,7 +18,7 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://localhost:";
+    public string BROKER_IP_ADDRESS = "tcp://ar-table.che.rochester.edu:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -290,7 +290,7 @@ public class vrCommClient : MonoBehaviour
                 var sendMsg = new NetMQMessage();
                 sendMsg.Append("simulation-update");
                 sendMsg.Append(sendMsgStr);
-                FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
+                //FrameClient.TrySendMultipartMessage(waitTime, sendMsg);
 
                 sendMsgStr = "{}";
 

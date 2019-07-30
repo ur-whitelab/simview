@@ -178,9 +178,13 @@ while True:
             print(str(len(client_dict)) + " client(s) connected")
 
         elif msg_type == b'last-msg':
-            del client_dict[client_id]
-            print(str(client_id) + " is disconnected.")
-            print(str(len(client_dict)) + " client(s) connected")
+            if (client_id in client_id.keys()):
+                del client_dict[client_id]
+                print(str(client_id) + " is disconnected.")
+                print(str(len(client_dict)) + " client(s) connected")
+            else:
+                print("Trying to disconnect client "str(client_id) + " which is already disconnected.")
+
 
         elif msg_type == b'simulation-update':
             channels[active_channel].socket.send_multipart([msg_type, message[2]])
