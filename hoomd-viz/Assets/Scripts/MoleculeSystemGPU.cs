@@ -1,8 +1,16 @@
-﻿using System.Collections;
+﻿using System.IO;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using FlatBuffers;
 using HZMsg;
+using UnityEngine.UI;
+//using System.Threading.Tasks;
+using Newtonsoft.Json;
+using NetMQ;
+using NetMQ.Sockets;
+using AsyncIO;
 
 public class MoleculeSystemGPU : MonoBehaviour
 {
@@ -49,6 +57,9 @@ public class MoleculeSystemGPU : MonoBehaviour
     private Vector3 max_particle_position;
 
     bool mesh_rend = true;
+
+    private string atom_props_file_path = "oplsaa_key.json";
+
 
     // Start is called before the first frame update
     void Start()
@@ -221,8 +232,37 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     }
 
+    private Color stringToColor(string color_string)
+    {
+        switch (color_string)
+        {
+            case "black":
+                return Color.black;
+            case "red":
+                return Color.red;
+            case "white":
+                return Color.white;
+            case "blue":
+                return Color.blue;
+            default:
+                Debug.Log("unexpected color string: " + color_string);
+                return Color.clear;
+        }
+    }
+
     private void InitSystem()
     {
+        string filePath = Path.Combine(Application.streamingAssetsPath, atom_props_file_path);
+
+        if (!File.Exists(filePath))
+        {
+            Debug.Log("Could not find atom props dict at file path: " + atom_props_file_path + "; Will not be able to read atom properties!");
+            return;
+        }
+
+        string atomPropsAsJson = File.ReadAllText(filePath);
+        var atom_prop_dict_values = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(atomPropsAsJson);
+
         if (moleculeTransforms != null)
         {
             for (int i = 0; i < moleculeTransforms.Length; i++)
@@ -266,59 +306,16 @@ public class MoleculeSystemGPU : MonoBehaviour
             moleculeTransforms[i].position = transform.position;
             moleculeTransforms[i].SetParent(transform);
 
-//            Debug.Log("pnames: " + particleNames[i]);
+            //            Debug.Log("pnames: " + particleNames[i]);
 
-            switch (particleNames[i])
-            {
-                case ("tip3p_H"):
-                    properties.SetColor("_Color", Color.gray);
-                    break;
+            string color_string = (string)atom_prop_dict_values[particleNames[i]]["color"];
+            Color _color = stringToColor(color_string);
+            string _element = (string)atom_prop_dict_values[particleNames[i]]["element"];
+            float _radius = (float)atom_prop_dict_values[particleNames[i]]["radius"];
 
-                case ("tip3p_O"):
-                    {
-                        properties.SetColor("_Color", Color.red);
-                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
-                        break;
-                    }
-                case ("opls_157"):
-                    {
-                        properties.SetColor("_Color", Color.black);
-                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
-                        break;
-                    }
-                case ("opls_156"):
-                    {
-                        properties.SetColor("_Color", Color.gray);
-                        break;
-                    }
-                    
-                case ("opls_154"):
-                    {
-                        properties.SetColor("_Color", Color.red);
-                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
-                        break;
-                    }
-                case ("opls_155"):
-                    {
-                        properties.SetColor("_Color", Color.grey);
-                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;//Oxygen is ~twice as large as Hydrogen.
-                        break;
-                    }
-
-                default:
-                    {
-                        //moleculeTransforms[i]
-                        Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-                        moleculeTransforms[i].localScale = default_prefab_scale * 2.0f;
-                        properties.SetColor("_Color", Color.clear);
-                        break;
-                    }
-
-            }
+            properties.SetColor("_Color", _color);
+            Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
+            moleculeTransforms[i].localScale = default_prefab_scale * _radius;
 
         //    localAtomScales[i] = moleculeTransforms[i].localScale;
 
