@@ -2090,7 +2090,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4baf4130bf7da4c0d96cffcf75c833da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BROKER_IP_ADDRESS: 'tcp://ar-table.che.rochester.edu:'
+  BROKER_IP_ADDRESS: 'tcp://10.5.13.161:'
   ipCanvas: {fileID: 755554476}
   ipInputField: {fileID: 905085582}
   client_id: 0
@@ -4135,7 +4135,6 @@ MonoBehaviour:
   simInterface: {fileID: 620243504}
   env: {fileID: 1639382449}
   camera: {fileID: 1764287207}
-  particleSystemRenderer: {fileID: 0}
   clientCanvasList:
   - {fileID: 645300601}
   - {fileID: 255863478}

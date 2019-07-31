@@ -20,7 +20,8 @@ public class vrCommClient : MonoBehaviour
     //public string ServerUri = "tcp://localhost:5556";
     //public string Server_Macbook_UR_RC_GUEST = "tcp://10.4.2.3:";
 
-    public string BROKER_IP_ADDRESS = "tcp://ar-table.che.rochester.edu:";
+    //public string BROKER_IP_ADDRESS = "tcp://ar-table.che.rochester.edu:";
+    public string BROKER_IP_ADDRESS = "tcp://10.5.13.161:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -104,11 +105,51 @@ public class vrCommClient : MonoBehaviour
         List<byte[]> msg = null;
         //bool received = SubClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
         bool received;
+
+        List<byte[]> init_msg = null;
+        bool init_recv = FrameClient.TryReceiveMultipartBytes(waitTime, ref init_msg, 2);
+        if (init_msg != null)
+        {
+            string init_msgType = System.Text.Encoding.UTF8.GetString(init_msg[0]);
+            Debug.Log("init msg type");
+            switch (init_msgType)
+            {
+                case ("bonds-update"):
+                    {
+                        if (OnNewBondFrame != null)
+                            OnNewBondFrame(System.Text.Encoding.UTF8.GetString(init_msg[1]));
+                        break;
+                    }
+
+                case ("bonds-complete"):
+                    if (OnCompleteBondFrame != null)
+                        OnCompleteBondFrame();
+                    break;
+
+                case ("names-update"):
+                    if (OnNewName != null)
+                        OnNewName(System.Text.Encoding.UTF8.GetString(init_msg[1]));
+                    break;
+
+                case ("names-complete"):
+                    if (OnCompleteNames != null)
+                        OnCompleteNames();
+                    break;
+                case ("hoomd-startup"):
+                    if (OnHoomdStartup != null)
+                        OnHoomdStartup();
+                    break;
+            }
+            
+        }
+
+
         if (!all_bonds_read)
         {
             //client has initialized after Hoomd or Hoomd isn't initialized yet so see if server has sent us bonds.
             //Either we'll get them normally or we will get them eventually once Hoomd starts for the first time.
-            received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+            // received = FrameClient.TryReceiveMultipartBytes(waitTime, ref msg, 2);
+            received = false;
         }
         else
         {

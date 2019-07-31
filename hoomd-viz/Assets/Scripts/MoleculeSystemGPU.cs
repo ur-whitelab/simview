@@ -306,16 +306,34 @@ public class MoleculeSystemGPU : MonoBehaviour
             moleculeTransforms[i].position = transform.position;
             moleculeTransforms[i].SetParent(transform);
 
-            //            Debug.Log("pnames: " + particleNames[i]);
+                        Debug.Log("pnames: " + particleNames[i]);
+            Dictionary<string, object> small_dict = new Dictionary<string, object>();
+            Color _color = Color.clear;
+            double _radius = 1.0;
+            if (atom_prop_dict_values.TryGetValue(particleNames[i], out small_dict))
+            {
+                Debug.Log("color string: " + particleNames[i]);
+                string color_string = (string)atom_prop_dict_values[particleNames[i]]["color"];
+                _color = stringToColor(color_string);
+                string _element = (string)atom_prop_dict_values[particleNames[i]]["element"];
+                _radius = (double)atom_prop_dict_values[particleNames[i]]["radius"];
+            }
+            else
+            {
+                Debug.Log("name " + particleNames[i] + " not found.");
 
-            string color_string = (string)atom_prop_dict_values[particleNames[i]]["color"];
-            Color _color = stringToColor(color_string);
-            string _element = (string)atom_prop_dict_values[particleNames[i]]["element"];
-            float _radius = (float)atom_prop_dict_values[particleNames[i]]["radius"];
+            }
+
+          
+            //float _radius = moleculeTransforms[i].localScale.x;
+         //   bool tp = float.TryParse(radius_string, out _radius);
+         //   Debug.Log("rad: " + _radius + "tp : " + tp);
+
+            
 
             properties.SetColor("_Color", _color);
             Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
-            moleculeTransforms[i].localScale = default_prefab_scale * _radius;
+            moleculeTransforms[i].localScale = default_prefab_scale * (float)_radius;
 
         //    localAtomScales[i] = moleculeTransforms[i].localScale;
 
