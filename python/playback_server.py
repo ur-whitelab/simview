@@ -22,7 +22,6 @@ packet_save_file_path = args.filename
 context = zmq.Context()
 sock = context.socket(zmq.PAIR)
 sock.bind('tcp://*:' + str(port))
-sock.send_multipart([b'hoomd-startup', b'none'])
 N = 100
 print('Starting Playback Loop')
 j = 0
