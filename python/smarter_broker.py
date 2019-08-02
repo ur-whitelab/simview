@@ -180,10 +180,10 @@ while True:
                 # if msg_type == b'state-update':
                 #   expecting_state_update = True
                 
-                fps = 1.0 / (time.time() - start_time)
+                fps = 1.0 / max((time.time() - start_time), 0.0001)
                 if msg_type == b'frame-complete':
                     while (fps >= 90.0):
-                        fps = 1.0 / (time.time() - start_time)
+                        fps = 1.0 / max((time.time() - start_time), 0.0001)
 
                 waitingToSend = False
                 str_ac = str(active_channel)
