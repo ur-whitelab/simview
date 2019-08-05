@@ -224,7 +224,7 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private void MolSysProcessNamesComplete()
     {
-        Debug.Log("num names from hoomd: " + particleNames.Count);
+        Debug.Log("number of names from hoomd: " + particleNames.Count);
         num_positions_from_hoomd = particleNames.Count;
         num_particles_from_hoomd = particleNames.Count;
 
@@ -232,7 +232,6 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private void MolSysPrepForNewHoomdSession()
     {
-        Debug.Log("prep for new channel");
         particleNames.Clear();
 
         mBonds.Clear();
@@ -325,17 +324,18 @@ public class MoleculeSystemGPU : MonoBehaviour
             Dictionary<string, object> small_dict = new Dictionary<string, object>();
             Color _color = Color.clear;
             double _radius = 1.0;
-            if (atom_prop_dict_values.TryGetValue(particleNames[i], out small_dict))
+            string parsed_pnames_string = particleNames[i].Replace("\n", "");
+            if (atom_prop_dict_values.TryGetValue(parsed_pnames_string, out small_dict))
             {
                 // Debug.Log("color string: " + particleNames[i]);
-                string color_string = (string)atom_prop_dict_values[particleNames[i]]["color"];
+                string color_string = (string)atom_prop_dict_values[parsed_pnames_string]["color"];
                 _color = stringToColor(color_string);
-                string _element = (string)atom_prop_dict_values[particleNames[i]]["element"];
-                _radius = (double)atom_prop_dict_values[particleNames[i]]["radius"];
+                string _element = (string)atom_prop_dict_values[parsed_pnames_string]["element"];
+                _radius = (double)atom_prop_dict_values[parsed_pnames_string]["radius"];
             }
             else
             {
-                Debug.Log("name " + particleNames[i] + " not found.");
+                Debug.Log("name " + parsed_pnames_string + " not found.");
                 //activeMolecules[i] = false;
                 badColor[i] = true;
 

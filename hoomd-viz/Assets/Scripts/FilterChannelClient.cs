@@ -10,8 +10,8 @@ using AsyncIO;
 
 public class FilterChannelClient : MonoBehaviour
 {
-    //public string BROKER_IP_ADDRESS = "tcp://ar-table.che.rochester.edu:";
-    public string BROKER_IP_ADDRESS = "tcp://10.5.12.72:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
+    //public string BROKER_IP_ADDRESS = "tcp://10.5.12.72:";
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
@@ -54,6 +54,9 @@ public class FilterChannelClient : MonoBehaviour
     int updates = 0;
     int num_framecompletes_from_broker = 0;
     int frame_count = 0;
+
+    private bool recieved_active_channel = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -77,7 +80,7 @@ public class FilterChannelClient : MonoBehaviour
         }
 
         string messageType = System.Text.Encoding.UTF8.GetString(message[0]);
-        // Debug.Log("init msg type: " + messageType);
+        //Debug.Log("init msg type: " + messageType);
         switch (messageType)
         {
             case ("bonds-update"):
@@ -103,10 +106,9 @@ public class FilterChannelClient : MonoBehaviour
                 string ac_string_RI = System.Text.Encoding.UTF8.GetString(message[1]);
                 int ac_int_RI = local_active_simulation;
                 int.TryParse(ac_string_RI, out ac_int_RI);
-                Debug.Log("active channel in re-init message: " + ac_int_RI);
                 if (ac_int_RI != activeSimFromZMQ)
                 {
-                    //pulling init info from wrong channel.
+                    //pulling init info from wrong channel, so abort re-init sequence.
                     reinitializing = false;
                 }
 
@@ -135,9 +137,10 @@ public class FilterChannelClient : MonoBehaviour
 
         if (messageType == "channel-update")
         {
+            recieved_active_channel = true;
             string active_channel_string = System.Text.Encoding.UTF8.GetString(message[1]);
             int.TryParse(active_channel_string, out activeSimFromZMQ);
-            Debug.Log("Active channel according to broker: " + activeSimFromZMQ + ". Active channel according to client: " + local_active_simulation);
+            //Debug.Log("Active channel according to broker: " + activeSimFromZMQ + ". Active channel according to client: " + local_active_simulation);
             if (activeSimFromZMQ != local_active_simulation)
             {
                 reinitializing = true;
@@ -146,25 +149,28 @@ public class FilterChannelClient : MonoBehaviour
 
     }
 
+    private IEnumerator ActiveChannelRoutine()
+    {
+        ConnectToACSocket();
+
+        recieved_active_channel = false;
+        while (!recieved_active_channel)
+        {
+            QueryChannelPublisher();
+            yield return new WaitForSeconds(1.0f);
+        }
+
+        DisconnectFromACSocket();
+    }
+
     // Update is called once per frame
     void Update()
     {
         if (frame_count % 100 == 0)
         {
-            ConnectToACSocket();
-            QueryChannelPublisher();
-            DisconnectFromACSocket();
+            IEnumerator acr = ActiveChannelRoutine();
+            StartCoroutine(acr);   
         }
-
-
-        //if (are_channels_synced)
-        //{
-        //    initialized_on_correct_channel = true;
-        //}
-        //else
-        //{
-        //    reinitializing = true;
-        //}
 
         if (reinitializing)
         {
@@ -180,6 +186,8 @@ public class FilterChannelClient : MonoBehaviour
                 local_active_simulation = activeSimFromZMQ;
                 reinitializing = false;
                 DisconnectFromInitSocket();
+                DisconnectFromPositionsSocket();
+                ConnectToPositionsSocket();
             }
 
             return;
@@ -199,7 +207,7 @@ public class FilterChannelClient : MonoBehaviour
 
             if (frames_since_last_msg_from_publisher > 0)
             {
-                Debug.Log("frames since last msg from publisher: " + frames_since_last_msg_from_publisher);
+                //Debug.Log("frames since last msg from publisher: " + frames_since_last_msg_from_publisher);
                 frames_since_last_msg_from_publisher = 0;
             }
 
@@ -208,7 +216,7 @@ public class FilterChannelClient : MonoBehaviour
             //This is here just to make sure that we don't try to use positions from a channel we aren't initialized for
             if (activeSimFromZMQ != local_active_simulation)
             {
-                Debug.Log("Client thinks the active channel is " + local_active_simulation + " but it is actually " + activeSimFromZMQ + " so let's reinit");
+                //Debug.Log("Client thinks the active channel is " + local_active_simulation + " but it is actually " + activeSimFromZMQ + ", so let's reinit");
                 reinitializing = true;
                 return;
             }
@@ -232,24 +240,6 @@ public class FilterChannelClient : MonoBehaviour
 
         }
 
-        //after a break we can assume that we are at a 'frame-complete'
-
-        //if (activeSimFromZMQ != local_active_simulation)
-        //{
-        //    // Debug.Log("client locally has active sim as " + local_active_simulation + ". Broker says its " + activeSimFromZMQ);
-        //    bool reinitialized = QueryInitializationPublisher();
-        //    if (!reinitialized)
-        //    {
-        //        //Debug.Log("local and zmq channel mismatch yet unable to get re-init data from publisher.");
-        //        reinitializing = true;
-        //    }
-        //    else
-        //    {
-        //        local_active_simulation = activeSimFromZMQ;
-        //        reinitializing = false;
-        //    }
-
-        //}
         frame_count++;
     }
 
@@ -278,7 +268,6 @@ public class FilterChannelClient : MonoBehaviour
         initializationSocket = new SubscriberSocket();
         initializationSocket.Connect(initialization_port_address);
         initializationSocket.SubscribeToAnyTopic();
-        Debug.Log("Initialization Socket connected on " + initialization_port_address);
         init_socket_connected = true;
     }
 
@@ -287,7 +276,6 @@ public class FilterChannelClient : MonoBehaviour
 
         initializationSocket.Close();
         initializationSocket.Dispose();
-        Debug.Log("Closed initialization Socket.");
         init_socket_connected = false;
 
     }
@@ -298,7 +286,6 @@ public class FilterChannelClient : MonoBehaviour
         activeChannelSocket = new SubscriberSocket();
         activeChannelSocket.Connect(ac_socket_port_address);
         activeChannelSocket.SubscribeToAnyTopic();
-        //  Debug.Log("Active Channel Socket connected on " + ac_socket_port_address);
 
     }
 
@@ -306,8 +293,22 @@ public class FilterChannelClient : MonoBehaviour
     {
         activeChannelSocket.Close();
         activeChannelSocket.Dispose();
-        //  Debug.Log("Closed active Channel Socket.");
 
+    }
+
+    private void ConnectToPositionsSocket()
+    {
+        string downstream_port_address = BROKER_IP_ADDRESS + "5572";
+
+        subscriberSocket = new SubscriberSocket();
+        subscriberSocket.Connect(downstream_port_address);
+        subscriberSocket.SubscribeToAnyTopic();
+    }
+
+    private void DisconnectFromPositionsSocket()
+    {
+        subscriberSocket.Close();
+        subscriberSocket.Dispose();
     }
 
     public void setAllBondsRead(bool b)
@@ -319,4 +320,5 @@ public class FilterChannelClient : MonoBehaviour
     {
         return all_bonds_read;
     }
+
 }
