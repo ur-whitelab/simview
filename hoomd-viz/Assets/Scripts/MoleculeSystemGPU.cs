@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityEngine.Profiling;
 using FlatBuffers;
 using HZMsg;
 using UnityEngine.UI;
@@ -27,9 +27,9 @@ public class MoleculeSystemGPU : MonoBehaviour
 
     private Transform[] moleculeTransforms;
     private Vector3[] frameUpdatePositions;
-    private bool[] activeMolecules;
-    private bool[] badColor;
-    private bool[] isolateMols;
+    //private bool[] activeMolecules;
+    //private bool[] badColor;
+    //private bool[] isolateMols;
     //private Vector3[] localAtomScales;
 
     private int num_positions_from_hoomd = 0;
@@ -68,6 +68,11 @@ public class MoleculeSystemGPU : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
+        //Profiler.logFile = "/Users/sebastianjakymiw/Documents/Rochester/Work/hoomd-zmq/hoomd-viz/Profiler/MolSysGPU_profile";
+        //Profiler.enableBinaryLog = true;
+        //Profiler.enabled = true;
+
         cc.OnNewFrame += MolSysProcessFrameUpdate;
         cc.OnCompleteFrame += MolSysEndFrameUpdate;
 
@@ -98,14 +103,9 @@ public class MoleculeSystemGPU : MonoBehaviour
         //posOffset = new Vector3(0.0f, 0.0f, 0.0f);
         for (int i = frame.I; i < frame.I + frame.N; i++)
         {
-            //frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.Y * scaleF,
-            //                                     frame.Positions(i - frame.I).Value.X * scaleF,
-            //                                   frame.Positions(i - frame.I).Value.W * scaleF) + posOffset;
             frameUpdatePositions[i] = new Vector3(frame.Positions(i - frame.I).Value.X,
                                                   frame.Positions(i - frame.I).Value.Y,
                                                   frame.Positions(i - frame.I).Value.Z) * scaleF + posOffset;
-            activeMolecules[i] = true;
-
         }
     }
 
@@ -121,23 +121,8 @@ public class MoleculeSystemGPU : MonoBehaviour
             {
                 max_particle_position = frameUpdatePositions[i];
             }
-
-            if ((scaleF < 0.07f && i % 2 == 0) || !activeMolecules[i])
-            {
-                moleculeTransforms[i].gameObject.SetActive(false);
-            }
-            else
-            {
-                moleculeTransforms[i].gameObject.SetActive(isolateMols[i]);
-            }
-
-            if (badColor[i])
-            {
-                moleculeTransforms[i].gameObject.SetActive(false);
-            }
+            moleculeTransforms[i].gameObject.SetActive(true);
         }
-
-        activeMolecules = new bool[num_positions_from_hoomd]; //reset active mol array.
 
         float current_graphics_update_time = Time.time;
         float current_graphics_update_frameCount = Time.frameCount;
@@ -151,15 +136,6 @@ public class MoleculeSystemGPU : MonoBehaviour
         float avg_fps = total_fps_sum / num_graphics_updates;
 
         fps_test.text = delta_fps.ToString();
-
-
-        // (Mathf.Abs(delta_fps - avg_fps) >= 10.0f)
-        //
-        // Debug.Log("average fps: " + avg_fps);
-        // Debug.Log("frames since last graphics update: " + frame_delta);
-        //   Debug.Log("seconds since last graphics update: " + time_delta);
-        //   Debug.Log("graphics fps: " + delta_fps);
-        //
 
         last_graphics_update_time = Time.time;
         last_graphics_update_frameCount = Time.frameCount;
@@ -227,7 +203,6 @@ public class MoleculeSystemGPU : MonoBehaviour
         Debug.Log("number of names from hoomd: " + particleNames.Count);
         num_positions_from_hoomd = particleNames.Count;
         num_particles_from_hoomd = particleNames.Count;
-
     }
 
     private void MolSysPrepForNewHoomdSession()
@@ -240,7 +215,6 @@ public class MoleculeSystemGPU : MonoBehaviour
         num_names_read = 0;
         num_positions_from_hoomd = 0;
         num_particles_from_hoomd = 0;
-
     }
 
     private Color stringToColor(string color_string)
@@ -267,13 +241,6 @@ public class MoleculeSystemGPU : MonoBehaviour
         TextAsset f = Resources.Load(atom_props_file_path) as TextAsset;
         string filePath = f.ToString();
 
-        //if (!File.Exists(filePath))
-        //{
-        //    Debug.Log("Could not find atom props dict at file path: " + atom_props_file_path + "; Will not be able to read atom properties!");
-        //    return;
-        //}
-
-        /// string atomPropsAsJson = File.ReadAllText(filePath);
         var atom_prop_dict_values = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(filePath);
 
         if (moleculeTransforms != null)
@@ -292,16 +259,6 @@ public class MoleculeSystemGPU : MonoBehaviour
 
         moleculeTransforms = new Transform[num_positions_from_hoomd];
         frameUpdatePositions = new Vector3[num_positions_from_hoomd];
-        activeMolecules = new bool[num_positions_from_hoomd];
-        isolateMols = new bool[num_positions_from_hoomd];
-        badColor = new bool[num_positions_from_hoomd];
-        //   localAtomScales = new Vector3[num_positions_from_hoomd];
-
-        for (int i = 0; i < isolateMols.Length; i++)
-        {
-            isolateMols[i] = true;
-        }
-
 
         if (num_particles_from_hoomd == 0)
         {
@@ -315,44 +272,25 @@ public class MoleculeSystemGPU : MonoBehaviour
         MaterialPropertyBlock properties = new MaterialPropertyBlock();
         for (int i = 0; i < num_particles_from_hoomd; i++)
         {
-
             moleculeTransforms[i] = Instantiate(atomPrefab);
             moleculeTransforms[i].position = transform.position;
             moleculeTransforms[i].SetParent(transform);
 
-            // Debug.Log("pnames: " + particleNames[i]);
             Dictionary<string, object> small_dict = new Dictionary<string, object>();
             Color _color = Color.clear;
             double _radius = 1.0;
             string parsed_pnames_string = particleNames[i].Replace("\n", "");
             if (atom_prop_dict_values.TryGetValue(parsed_pnames_string, out small_dict))
             {
-                // Debug.Log("color string: " + particleNames[i]);
                 string color_string = (string)atom_prop_dict_values[parsed_pnames_string]["color"];
                 _color = stringToColor(color_string);
                 string _element = (string)atom_prop_dict_values[parsed_pnames_string]["element"];
                 _radius = (double)atom_prop_dict_values[parsed_pnames_string]["radius"];
             }
-            else
-            {
-                Debug.Log("name " + parsed_pnames_string + " not found.");
-                //activeMolecules[i] = false;
-                badColor[i] = true;
-
-            }
-
-
-            //float _radius = moleculeTransforms[i].localScale.x;
-            //   bool tp = float.TryParse(radius_string, out _radius);
-            //   Debug.Log("rad: " + _radius + "tp : " + tp);
-
-
 
             properties.SetColor("_Color", _color);
             Vector3 default_prefab_scale = moleculeTransforms[i].localScale;
             moleculeTransforms[i].localScale = default_prefab_scale * (float)_radius;
-
-            //    localAtomScales[i] = moleculeTransforms[i].localScale;
 
             MeshRenderer r = moleculeTransforms[i].GetComponent<MeshRenderer>();
             if (r)
@@ -373,7 +311,7 @@ public class MoleculeSystemGPU : MonoBehaviour
             moleculeTransforms[i].gameObject.SetActive(false);
 
         }
-        //MaterialPropertyBlock bond_properties = new MaterialPropertyBlock();
+
         //instantiate bonds
         int c = 0;
         for (int i = 0; i < mBonds.Count; i++)
@@ -388,7 +326,6 @@ public class MoleculeSystemGPU : MonoBehaviour
 
             Bond _b = bond_obj.gameObject.GetComponent<Bond>();
             if (_b == null) { _b = bond_obj.gameObject.AddComponent<Bond>(); }
-            //_b.msys = GetComponent<MoleculeSystemGPU>();
 
             _b.a1 = a1;
             _b.a2 = a2;
@@ -421,7 +358,6 @@ public class MoleculeSystemGPU : MonoBehaviour
                     }
                 }
             }
-
         }
 
         Debug.Log("num bonds pushed to graphics: " + c);
@@ -460,11 +396,8 @@ public class MoleculeSystemGPU : MonoBehaviour
             //enable all of them
             for (int i = 0; i < moleculeTransforms.Length; i++)
             {
-                //moleculeTransforms[i].gameObject.transform.localScale = localAtomScales[i];
                 moleculeTransforms[i].gameObject.SetActive(true);
-                isolateMols[i] = true;
             }
-
         }
         else
         {
@@ -493,8 +426,6 @@ public class MoleculeSystemGPU : MonoBehaviour
                 Debug.Log("range of atoms length: " + range_of_atoms.Length);
             }
 
-
-
             if (a1_parse && a2_parse)
             {
                 int max_idx = Mathf.Max(a1_idx, a2_idx);
@@ -511,23 +442,6 @@ public class MoleculeSystemGPU : MonoBehaviour
                 {
                     min_idx = a1_idx;
                 }
-
-                for (int i = 0; i < moleculeTransforms.Length; i++)
-                {
-                    if (i >= min_idx && i <= max_idx)
-                    {
-                        isolateMols[i] = true;
-                        // moleculeTransforms[i].localScale = localAtomScales[i] * 4;
-                        // moleculeTransforms[i].gameObject.SetActive(true);
-                    }
-                    else
-                    {
-                        isolateMols[i] = false;
-                        // moleculeTransforms[i].gameObject.SetActive(false);
-                    }
-                }
-
-
             }
             else
             {

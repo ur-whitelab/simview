@@ -10,16 +10,18 @@ using AsyncIO;
 
 public class FilterChannelClient : MonoBehaviour
 {
-    public string BROKER_IP_ADDRESS = "tcp://localhost:";
-    //public string BROKER_IP_ADDRESS = "tcp://10.5.12.72:";
+    public string BROKER_IP_ADDRESS = "tcp://10.4.4.167:";
+
+    private string initialization_address;
+    private string downstream_address;
+    private string active_channel_socket_address;
 
     public delegate void NewFrameAction(Frame frame);
     public delegate void CompleteFrameAction();
     public delegate void SimulationUpdateAction(Dictionary<string, string> state);
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
-    //public event NewFrameAction OnNewFrame_Forced;
-    //public event CompleteFrameAction OnCompleteFrame_Forced;
+
     public event SimulationUpdateAction OnSimulationUpdate;
 
     public event NewBondFrameAction OnNewBondFrame;
@@ -40,6 +42,7 @@ public class FilterChannelClient : MonoBehaviour
     private SubscriberSocket activeChannelSocket;
     //NO BLOCK
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
+    private System.TimeSpan lingerTime = new System.TimeSpan(0, 0, 0);
 
     int frames_since_last_msg_from_publisher = 0;
 
@@ -60,6 +63,7 @@ public class FilterChannelClient : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        
         ZMQStartUp();
     }
 
@@ -140,13 +144,12 @@ public class FilterChannelClient : MonoBehaviour
             recieved_active_channel = true;
             string active_channel_string = System.Text.Encoding.UTF8.GetString(message[1]);
             int.TryParse(active_channel_string, out activeSimFromZMQ);
-            //Debug.Log("Active channel according to broker: " + activeSimFromZMQ + ". Active channel according to client: " + local_active_simulation);
+            //Debug.Log("Active channel according to broker: " + activeSimFromZMQ + ". Active channel according to client: " + local_active_simulation + "fc: " + frame_count);
             if (activeSimFromZMQ != local_active_simulation)
             {
                 reinitializing = true;
             }
         }
-
     }
 
     private IEnumerator ActiveChannelRoutine()
@@ -166,8 +169,9 @@ public class FilterChannelClient : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (frame_count % 100 == 0)
+        if (frame_count % 10 == 0)
         {
+            //Debug.Log("frame count is 10 - starting acr if not already begun.");
             IEnumerator acr = ActiveChannelRoutine();
             StartCoroutine(acr);   
         }
@@ -194,7 +198,7 @@ public class FilterChannelClient : MonoBehaviour
         }
 
         //only try to get positions if we have the correct particle names and bond data.
-        while (true)
+        while (true && !reinitializing)
         {
             List<byte[]> message = null;
             bool recieved = subscriberSocket.TryReceiveMultipartBytes(waitTime, ref message, 2);
@@ -247,33 +251,36 @@ public class FilterChannelClient : MonoBehaviour
     private void ZMQStartUp()
     {
         // set-up sockets
-        string downstream_port_address = BROKER_IP_ADDRESS + "5572";
-        string initialization_port_address = BROKER_IP_ADDRESS + "5573";
+        downstream_address = BROKER_IP_ADDRESS + "5572";
+        initialization_address = BROKER_IP_ADDRESS + "5573";
+        active_channel_socket_address = BROKER_IP_ADDRESS + "5574";
 
         subscriberSocket = new SubscriberSocket();
-        subscriberSocket.Connect(downstream_port_address);
+        subscriberSocket.Connect(downstream_address);
         subscriberSocket.SubscribeToAnyTopic();
-        Debug.Log("Subscriber Socket connected on " + downstream_port_address);
-        PlayerPrefs.SetString("IPAddress", BROKER_IP_ADDRESS);
+
+        subscriberSocket.Options.Linger = lingerTime;
+
+        Debug.Log("Subscriber Socket connected on " + downstream_address);
+        //PlayerPrefs.SetString("IPAddress", BROKER_IP_ADDRESS);
 
         ConnectToACSocket();
         ConnectToInitSocket();
-
-
     }
 
     private void ConnectToInitSocket()
     {
-        string initialization_port_address = BROKER_IP_ADDRESS + "5573";
         initializationSocket = new SubscriberSocket();
-        initializationSocket.Connect(initialization_port_address);
+        initializationSocket.Connect(initialization_address);
         initializationSocket.SubscribeToAnyTopic();
+
+        initializationSocket.Options.Linger = lingerTime;
+
         init_socket_connected = true;
     }
 
     private void DisconnectFromInitSocket()
     {
-
         initializationSocket.Close();
         initializationSocket.Dispose();
         init_socket_connected = false;
@@ -282,26 +289,23 @@ public class FilterChannelClient : MonoBehaviour
 
     private void ConnectToACSocket()
     {
-        string ac_socket_port_address = BROKER_IP_ADDRESS + "5574";
         activeChannelSocket = new SubscriberSocket();
-        activeChannelSocket.Connect(ac_socket_port_address);
+        activeChannelSocket.Connect(active_channel_socket_address);
         activeChannelSocket.SubscribeToAnyTopic();
 
+        activeChannelSocket.Options.Linger = lingerTime;
     }
 
     private void DisconnectFromACSocket()
     {
         activeChannelSocket.Close();
         activeChannelSocket.Dispose();
-
     }
 
     private void ConnectToPositionsSocket()
     {
-        string downstream_port_address = BROKER_IP_ADDRESS + "5572";
-
         subscriberSocket = new SubscriberSocket();
-        subscriberSocket.Connect(downstream_port_address);
+        subscriberSocket.Connect(downstream_address);
         subscriberSocket.SubscribeToAnyTopic();
     }
 
@@ -321,4 +325,21 @@ public class FilterChannelClient : MonoBehaviour
         return all_bonds_read;
     }
 
+#if UNITY_ANDROID
+
+    private void OnApplicationPause(bool pause)
+    {
+        DisconnectFromPositionsSocket();
+        DisconnectFromACSocket();
+        DisconnectFromInitSocket();
+    }
+
+#endif
+
+    private void OnApplicationQuit()
+    {
+        DisconnectFromPositionsSocket();
+        DisconnectFromACSocket();
+        DisconnectFromInitSocket();
+    }
 }
