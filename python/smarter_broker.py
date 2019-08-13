@@ -10,7 +10,7 @@ from UnityClient import UnityClient
 #Try to implement a pub/sub pattern from broker
 #to Unity that doesn't overwhelm the clients.
 #I'd like clients to be able to join midstream and pick off where
-#the current position stream is. Further, it's import to have a robust 
+#the current position stream is. Further, it's import to have a robust
 #'send init data' portion.
 
 #First thing to get working:
@@ -32,6 +32,7 @@ else:
     sim_type_list = sys.argv[1:]
 
 active_channel = 0
+active_channel_changed = False
 channels = []
 frames_since_last_update_per_channel = []
 frame_count = 0
@@ -142,23 +143,23 @@ def send_init_data_to_all_clients():
 waitingToSend = False
 start_time = time.time()
 
-send_init_data_to_all_clients()
-send_channel_data_to_all_clients()
+# send_init_data_to_all_clients()
+# send_channel_data_to_all_clients()
 
 while True:
     socks = dict(poller.poll())
-    
+
     if not waitingToSend:
         start_time = time.time()
         waitingToSend = True
-    
+
     for i in range(0, len(channels)):
         channel_socket = channels[i].socket
         if socks.get(channel_socket) == zmq.POLLIN:
 
             if (frame_count % 1000 == 0):
                 print('Update from channel ' + str(i) + '; there have been ' + str(frames_since_last_update_per_channel[i]) + ' frames since the last update')
-            
+
             frames_since_last_update_per_channel[i] = 0
             message = channel_socket.recv_multipart()
             msg_type = message[0]
@@ -174,12 +175,12 @@ while True:
                 print('num of name messages in channel ' + str(i) + ' of type ' + str(channels[i].simulation_type) + ': ' + str(len(channels[i].particle_name_messages)))
                 print('num of bond messages in channel ' + str(i) + ' of type ' + str(channels[i].simulation_type) + ': ' + str(len(channels[i].bond_messages)))
                 print('number of initialized simulations: ' + str(initialized_simulations))
-            #Should execute only for the activate simulation and only once the above init code jas
+            #Should execute only for the activate simulation and only once the above init code has run.
             elif (i == active_channel and channels[i].initialized):
                 # Look into adding this snippet
                 # if msg_type == b'state-update':
                 #   expecting_state_update = True
-                
+
                 fps = 1.0 / max((time.time() - start_time), 0.0001)
                 if msg_type == b'frame-complete':
                     while (fps >= 90.0):
@@ -202,16 +203,21 @@ while True:
         else:
             frames_since_last_update_per_channel[i] += 1
         #----end socket pollin
-    
-    if frame_count % 100 == 0:
+
+    if active_channel_changed:
         send_channel_data_to_all_clients()
+        active_channel_changed = False
 
     if frame_count % 1000 == 0:
         send_init_data_to_all_clients()
 
     if frame_count % 20000 == 0 and frame_count != 0:
         print("switched channels")
-        active_channel = 1
+        active_channel_changed = True
+        if active_channel == 0:
+            active_channel = 1
+        else:
+            active_channel = 0
 
 
     frame_count += 1

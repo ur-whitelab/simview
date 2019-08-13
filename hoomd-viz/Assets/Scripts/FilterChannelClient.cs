@@ -10,7 +10,7 @@ using AsyncIO;
 
 public class FilterChannelClient : MonoBehaviour
 {
-    public string BROKER_IP_ADDRESS = "tcp://10.4.4.167:";
+    public string BROKER_IP_ADDRESS = "tcp://10.4.10.185:";
 
     private string initialization_address;
     private string downstream_address;
@@ -57,13 +57,12 @@ public class FilterChannelClient : MonoBehaviour
     int updates = 0;
     int num_framecompletes_from_broker = 0;
     int frame_count = 0;
-
+    int frame_init_socket_disconnected = 0;
     private bool recieved_active_channel = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        
         ZMQStartUp();
     }
 
@@ -152,44 +151,47 @@ public class FilterChannelClient : MonoBehaviour
         }
     }
 
-    private IEnumerator ActiveChannelRoutine()
-    {
-        ConnectToACSocket();
+    //private IEnumerator ActiveChannelRoutine()
+    //{
+    //    ConnectToACSocket();
 
-        recieved_active_channel = false;
-        while (!recieved_active_channel)
-        {
-            QueryChannelPublisher();
-            yield return new WaitForSeconds(1.0f);
-        }
+    //    recieved_active_channel = false;
+    //    while (!recieved_active_channel)
+    //    {
+    //        QueryChannelPublisher();
+    //        yield return new WaitForSeconds(1.0f);
+    //    }
 
-        DisconnectFromACSocket();
-    }
+    //    DisconnectFromACSocket();
+    //}
 
     // Update is called once per frame
     void Update()
     {
-        if (frame_count % 10 == 0)
-        {
-            //Debug.Log("frame count is 10 - starting acr if not already begun.");
-            IEnumerator acr = ActiveChannelRoutine();
-            StartCoroutine(acr);   
-        }
+        //if (frame_count % 100 == 0)
+        //{
+        //    //Debug.Log("frame count is 10 - starting acr if not already begun.");
+        //    IEnumerator acr = ActiveChannelRoutine();
+        //    StartCoroutine(acr);
+        //}
+
+        //Broker only sends an active channel message if the active chanenl changes. Clients only need to be aware that a channel switch occured - they
+        //don't need to care about the specific channel numbers since they'll get init data no matter what.
+        QueryChannelPublisher();
+
 
         if (reinitializing)
         {
 
             bool reinitialized = QueryInitializationPublisher();
-            if (!reinitialized)
-            {
-                // Debug.Log("local and zmq channel mismatch yet unable to get re-init data from publisher.");
-                //  reinitializing = true;
-            }
-            else
+            if (reinitialized)
             {
                 local_active_simulation = activeSimFromZMQ;
                 reinitializing = false;
+
                 DisconnectFromInitSocket();
+                //I could see this being an issue - maybe there could be an instance where I try to pull from the positions socket before
+                //it has a chance to fully re-initialze? Maybe use the 'flag socket thing' from the ZMQ docs?
                 DisconnectFromPositionsSocket();
                 ConnectToPositionsSocket();
             }
@@ -220,7 +222,7 @@ public class FilterChannelClient : MonoBehaviour
             //This is here just to make sure that we don't try to use positions from a channel we aren't initialized for
             if (activeSimFromZMQ != local_active_simulation)
             {
-                //Debug.Log("Client thinks the active channel is " + local_active_simulation + " but it is actually " + activeSimFromZMQ + ", so let's reinit");
+                Debug.Log("Client thinks the active channel is " + local_active_simulation + " but it is actually " + activeSimFromZMQ + ", so let's reinit");
                 reinitializing = true;
                 return;
             }
@@ -264,7 +266,12 @@ public class FilterChannelClient : MonoBehaviour
         Debug.Log("Subscriber Socket connected on " + downstream_address);
         //PlayerPrefs.SetString("IPAddress", BROKER_IP_ADDRESS);
 
-        ConnectToACSocket();
+        //ConnectToACSocket();
+        activeChannelSocket = new SubscriberSocket();
+        activeChannelSocket.Connect(active_channel_socket_address);
+        activeChannelSocket.SubscribeToAnyTopic();
+
+        activeChannelSocket.Options.Linger = lingerTime;
         ConnectToInitSocket();
     }
 
@@ -276,6 +283,9 @@ public class FilterChannelClient : MonoBehaviour
 
         initializationSocket.Options.Linger = lingerTime;
 
+        int frame_diff = frame_count - frame_init_socket_disconnected;
+        Debug.Log("init socket last disconnected " + frame_diff + " frames ago.");
+
         init_socket_connected = true;
     }
 
@@ -284,23 +294,23 @@ public class FilterChannelClient : MonoBehaviour
         initializationSocket.Close();
         initializationSocket.Dispose();
         init_socket_connected = false;
-
+        frame_init_socket_disconnected = frame_count;
     }
 
-    private void ConnectToACSocket()
-    {
-        activeChannelSocket = new SubscriberSocket();
-        activeChannelSocket.Connect(active_channel_socket_address);
-        activeChannelSocket.SubscribeToAnyTopic();
+    //private void ConnectToACSocket()
+    //{
+    //    activeChannelSocket = new SubscriberSocket();
+    //    activeChannelSocket.Connect(active_channel_socket_address);
+    //    activeChannelSocket.SubscribeToAnyTopic();
 
-        activeChannelSocket.Options.Linger = lingerTime;
-    }
+    //    activeChannelSocket.Options.Linger = lingerTime;
+    //}
 
-    private void DisconnectFromACSocket()
-    {
-        activeChannelSocket.Close();
-        activeChannelSocket.Dispose();
-    }
+    //private void DisconnectFromACSocket()
+    //{
+    //    activeChannelSocket.Close();
+    //    activeChannelSocket.Dispose();
+    //}
 
     private void ConnectToPositionsSocket()
     {
@@ -339,7 +349,9 @@ public class FilterChannelClient : MonoBehaviour
     private void OnApplicationQuit()
     {
         DisconnectFromPositionsSocket();
-        DisconnectFromACSocket();
+        //DisconnectFromACSocket();
+        activeChannelSocket.Close();
+        activeChannelSocket.Dispose();
         DisconnectFromInitSocket();
     }
 }
