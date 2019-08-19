@@ -10,7 +10,7 @@ using AsyncIO;
 
 public class FilterChannelClient : MonoBehaviour
 {
-    public string BROKER_IP_ADDRESS = "tcp://10.4.10.185:";
+    public string BROKER_IP_ADDRESS = "tcp://ar-table.che.rochester.edu:";
 
     private string initialization_address;
     private string downstream_address;
@@ -83,7 +83,7 @@ public class FilterChannelClient : MonoBehaviour
         }
 
         string messageType = System.Text.Encoding.UTF8.GetString(message[0]);
-        //Debug.Log("init msg type: " + messageType);
+        Debug.Log("init msg type: " + messageType);
         switch (messageType)
         {
             case ("bonds-update"):
@@ -122,7 +122,6 @@ public class FilterChannelClient : MonoBehaviour
         }
 
         return false;
-
     }
 
     private void QueryChannelPublisher()
@@ -182,7 +181,6 @@ public class FilterChannelClient : MonoBehaviour
 
         if (reinitializing)
         {
-
             bool reinitialized = QueryInitializationPublisher();
             if (reinitialized)
             {
@@ -224,6 +222,13 @@ public class FilterChannelClient : MonoBehaviour
             {
                 Debug.Log("Client thinks the active channel is " + local_active_simulation + " but it is actually " + activeSimFromZMQ + ", so let's reinit");
                 reinitializing = true;
+                return;
+            }
+
+            if (!all_bonds_read)
+            {
+                Debug.Log("exiting position messaging loop because we don't have bond data - wait until we do");
+                local_active_simulation = -1;
                 return;
             }
 
@@ -340,7 +345,7 @@ public class FilterChannelClient : MonoBehaviour
     private void OnApplicationPause(bool pause)
     {
         DisconnectFromPositionsSocket();
-        DisconnectFromACSocket();
+//        DisconnectFromACSocket();
         DisconnectFromInitSocket();
     }
 

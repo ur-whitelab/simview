@@ -164,7 +164,7 @@ public class MoleculeSystemGPU : MonoBehaviour
     {
         Debug.Log(mBonds.Count + " bonds read in total.");
 
-        cc.setAllBondsRead(true);
+        //cc.setAllBondsRead(true);
         InitSystem();
     }
 
@@ -263,11 +263,17 @@ public class MoleculeSystemGPU : MonoBehaviour
         if (num_particles_from_hoomd == 0)
         {
             Debug.Log("Trying to initialize molecule system without particle data being sent to Unity");
-        }
-        if (!cc.getAllBondsRead())
+            cc.setAllBondsRead(false);
+            return;
+        } else
         {
-            Debug.Log("Trying to initialize molecule system without all bond data being sent to Unity!");
+            cc.setAllBondsRead(true);
         }
+        //if (!cc.getAllBondsRead())
+        //{
+        //    Debug.Log("Trying to initialize molecule system without all bond data being sent to Unity!");
+        //    return;
+        //}
         //instantiate particles
         MaterialPropertyBlock properties = new MaterialPropertyBlock();
         for (int i = 0; i < num_particles_from_hoomd; i++)
