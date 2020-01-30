@@ -1,0 +1,21 @@
+Usage Instructions:
+
+Installation:
+1. Hoomd-blue and hoomd-zmq (vr-unity branch).
+2. Bluehive modules needed to run the simulations live are just module load git anaconda3/2018.12b cmake sqlite cudnn/9.0-7/ zmq/4.2.0/b1
+
+Running Unity Scene:
+1. smarter_broker.py is the broker. Run this first.
+	call smarter_broker like: python3 smarter_broker.py A B if you want two.
+2. For live simulations:
+	ssh tunnel from Bluehive to the machine where the broker is running. 
+	ssh -N -L 8081:bhc0001:8080 YourNetIDHere@bluehive.circ.rochester.edu
+
+	For pre-recorded simulations:
+	run hoomd-zmq/python/playback_server.py -p port -f prerecorded_file
+
+3. For the client-side the only thing to make sure of is that the device is pointed at the correct IP address, namely the IP address for the machine where the broker is running.
+
+Pre-recorded simulation (Process to be improved):
+Run the simulation as if it were live (step 2 above) but instead of using a regular Unity client, run 
+

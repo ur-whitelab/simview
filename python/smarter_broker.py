@@ -4,19 +4,11 @@ import time
 from random import randint, random
 import json
 
+import keyboard
+
 from Simulation import SimulationChannel
 from UnityClient import UnityClient
 
-#Try to implement a pub/sub pattern from broker
-#to Unity that doesn't overwhelm the clients.
-#I'd like clients to be able to join midstream and pick off where
-#the current position stream is. Further, it's import to have a robust
-#'send init data' portion.
-
-#First thing to get working:
-#multi-client pub/sub that reliably sends init data and allows clients to connect/disconnect at will.
-#Next incorporate a second python zmq process that just takes a single int as command that allows for changing channels
-#and fires off a zmq message with that data to the broker.
 
 print(str(len(sys.argv) - 1) + ' simulations requested from the command line')
 
@@ -49,6 +41,11 @@ initialization_publisher.bind('tcp://*:5573')
 active_channel_publisher = context.socket(zmq.PUB)
 active_channel_publisher.bind('tcp://*:5574')
 
+instructor_pipe = context.socket(zmq.PAIR)
+instructor_pipe.bind('tcp://*:5575')
+
+latest_state_update = {}
+
 sim_ports = {
     'A': '5550',
     'B': '5551',
@@ -57,6 +54,11 @@ sim_ports = {
 }
 
 poller = zmq.Poller()
+
+instructor_poller =  zmq.Poller()
+instructor_poller.register(instructor_pipe, zmq.POLLIN)
+
+print('reg poller')
 
 for i in range(0, len(sim_type_list)):
     print('starting simulation channel ' + str(i) + ' of type ' + str(sim_type_list[i]))
@@ -139,7 +141,6 @@ def send_init_data_to_all_clients():
 
     initialization_publisher.send_multipart([b'bonds-complete', channel_aware_message])
 
-
 waitingToSend = False
 start_time = time.time()
 
@@ -147,7 +148,26 @@ start_time = time.time()
 # send_channel_data_to_all_clients()
 
 while True:
-    socks = dict(poller.poll())
+
+    #check the pipe to the instructor client to see if there's data in there.
+    #pollers don't block the thread
+
+
+    instr_poll = dict(instructor_poller.poll(10))
+    if instr_poll.get(instructor_pipe) == zmq.POLLIN:
+        print("polling")
+        instr_msg = instructor_pipe.recv_multipart()
+        instr_msg_type = instr_msg[0]
+        if instr_msg_type == b'sim-update':
+           latest_state_update = instr_msg[1]
+           #channels[active_channel].socket.send('')
+        if instr_msg_type == b'channel-change':
+            print('channel switched from ' + str(active_channel) + ' to ' + str(instr_msg[1]))
+            active_channel = int(instr_msg[1])
+
+    #end of instructor pipe check code.
+
+    socks = dict(poller.poll(10))
 
     if not waitingToSend:
         start_time = time.time()
@@ -182,9 +202,9 @@ while True:
                 #   expecting_state_update = True
 
                 fps = 1.0 / max((time.time() - start_time), 0.0001)
-                if msg_type == b'frame-complete':
-                    while (fps >= 90.0):
-                        fps = 1.0 / max((time.time() - start_time), 0.0001)
+                # if msg_type == b'frame-complete':
+                #     while (fps >= 90.0):
+                #         fps = 1.0 / max((time.time() - start_time), 0.0001)
 
                 waitingToSend = False
                 str_ac = str(active_channel)
@@ -211,13 +231,18 @@ while True:
     if frame_count % 1000 == 0:
         send_init_data_to_all_clients()
 
-    if frame_count % 20000 == 0 and frame_count != 0:
-        print("switched channels")
-        active_channel_changed = True
-        if active_channel == 0:
-            active_channel = 1
-        else:
-            active_channel = 0
+   
+
+    # if frame_count % 20000 == 0 and frame_count != 0:
+    #     print("switched channels")
+    #     active_channel_changed = True
+    #     active_channel += 1
+    #     if active_channel > 1:
+    #         active_channel = 0
+    #     # if active_channel == 0:
+    #     #     active_channel = 1
+    #     # else:
+    #     #     active_channel = 0
 
 
     frame_count += 1
