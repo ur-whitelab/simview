@@ -4,8 +4,6 @@ import time
 from random import randint, random
 import json
 
-import keyboard
-
 from Simulation import SimulationChannel
 from UnityClient import UnityClient
 
