@@ -10,11 +10,10 @@ RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86
 RUN chmod +x /srv/miniconda.sh && /srv/miniconda.sh -b -p /usr/local/miniconda
 ENV PATH="/usr/local/miniconda/bin:$PATH"
 
-RUN conda create -n py36 python=3.6
-ENV PATH="/usr/local/miniconda/envs/py36/bin:$PATH"
+#RUN conda create -n py36 python=3.7
+#ENV PATH="/usr/local/miniconda/envs/py36/bin:$PATH"
 
-RUN conda config --add channels glotzer && \
-        conda install -y fresnel gsd freud &&  conda clean -a
+RUN conda install -c conda-forge -y fresnel gsd freud mbuild rdkit &&  conda clean -a
 
 RUN conda install -y Pillow \
         h5py \
@@ -28,7 +27,8 @@ RUN conda install -y Pillow \
         tqdm &&\
         conda clean -a
 
-RUN git clone --recursive https://bitbucket.org/glotzer/hoomd-blue /srv/hoomd-blue
+RUN git clone --recursive https://bitbucket.org/glotzer/hoomd-blue /srv/hoomd-blue &&\
+  cd hoomd-blue && git checkout tags/v2.5.2
 WORKDIR /srv/hoomd-blue
 
 #Add plugin
