@@ -136,8 +136,8 @@ def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pre
 
 #hoomd ff file
 #Setting up the forcefield
-def prepare_hoomd(compound,show_ports=False, forcefield_name='oplsaa',
-             forcefield_files=None, forcefield_debug=False, box=None,
+def prepare_hoomd(compound,show_ports=False, forcefield_name=None,
+             forcefield_files='oplsaa.xml', forcefield_debug=False, box=None,
              overwrite=False, residues=None, references_file=None,
              combining_rule='lorentz', **kwargs):
     structure = compound.to_parmed(box=box, residues=residues)
