@@ -305,7 +305,7 @@ def dihedral_coeffs(system, param_sys):
 
 #end of hoomdff file
 
-if __name__ == '__main__':
+def main():
     fire.Fire(run_simulation)
 
 
