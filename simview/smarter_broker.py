@@ -75,6 +75,41 @@ def broker(sim_type_list=[]):
 
     # send_init_data_to_all_clients()
     # send_channel_data_to_all_clients()
+    #     initialization_publisher.send_multipart([_id, b'bonds-complete'])
+    def send_channel_data_to_all_clients():
+        active_channel_string = str(active_channel)
+        active_channel_message = bytes(active_channel_string, 'utf-8')
+
+        active_channel_publisher.send_multipart([b'channel-update', active_channel_message])
+
+    def send_init_data_to_all_clients():
+
+        str_ac = str(active_channel)
+        channel_aware_message = bytes(str_ac, 'utf-8')
+
+        #initialization_publisher.send_multipart([b're-init', channel_aware_message])
+        initialization_publisher.send_multipart([b're-init', channel_aware_message])
+        print("sent re-init message on frame " + str(frame_count))
+
+        pnames_data = channels[active_channel].particle_name_messages
+        b_data = channels[active_channel].bond_messages
+
+        print('sending ' + str(len(pnames_data)) + ' particle name messages and ' + str(len(b_data)) + ' bond messages to unity')
+        print('...from channel ' + str(active_channel) + ' of type ' + str(channels[active_channel].simulation_type))
+
+        for n_msg in pnames_data:
+            msg = [n_msg[0], n_msg[1]]
+            initialization_publisher.send_multipart(msg)
+
+        print('sent names to clients.')
+        initialization_publisher.send_multipart([b'names-complete', channel_aware_message])
+
+        print('sending bonds to clients.')
+        for b_msg in b_data:
+            msg = [b_msg[0], b_msg[1]]
+            initialization_publisher.send_multipart(msg)
+
+        initialization_publisher.send_multipart([b'bonds-complete', channel_aware_message])
 
     while True:
 
@@ -161,41 +196,6 @@ def broker(sim_type_list=[]):
 
         frame_count += 1
 
-    #     initialization_publisher.send_multipart([_id, b'bonds-complete'])
-    def send_channel_data_to_all_clients():
-        active_channel_string = str(active_channel)
-        active_channel_message = bytes(active_channel_string, 'utf-8')
-
-        active_channel_publisher.send_multipart([b'channel-update', active_channel_message])
-
-    def send_init_data_to_all_clients():
-
-        str_ac = str(active_channel)
-        channel_aware_message = bytes(str_ac, 'utf-8')
-
-        #initialization_publisher.send_multipart([b're-init', channel_aware_message])
-        initialization_publisher.send_multipart([b're-init', channel_aware_message])
-        print("sent re-init message on frame " + str(frame_count))
-
-        pnames_data = channels[active_channel].particle_name_messages
-        b_data = channels[active_channel].bond_messages
-
-        print('sending ' + str(len(pnames_data)) + ' particle name messages and ' + str(len(b_data)) + ' bond messages to unity')
-        print('...from channel ' + str(active_channel) + ' of type ' + str(channels[active_channel].simulation_type))
-
-        for n_msg in pnames_data:
-            msg = [n_msg[0], n_msg[1]]
-            initialization_publisher.send_multipart(msg)
-
-        print('sent names to clients.')
-        initialization_publisher.send_multipart([b'names-complete', channel_aware_message])
-
-        print('sending bonds to clients.')
-        for b_msg in b_data:
-            msg = [b_msg[0], b_msg[1]]
-            initialization_publisher.send_multipart(msg)
-
-        initialization_publisher.send_multipart([b'bonds-complete', channel_aware_message])
 
 def main():
 	fire.Fire(broker)
