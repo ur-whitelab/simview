@@ -12,12 +12,8 @@ source activate hoomd-zmq
 export CMAKE_PREFIX_PATH=/path/to/environment
 git clone --recursive https://bitbucket.org/glotzer/hoomd-blue hoomd-blue
 cd hoomd-blue && git checkout tags/v2.5.2
-git clone https://github.com/ur-whitelab/hoomd-zmq
-```
-Once you've cloned the hoomd-zmq directory, switch to branch vr-unity and pull changes:
-```
-git checkout -b vr-unity
-git pull origin vr-unity
+conda install -c conda-forge rdkit
+git clone https://github.com/ur-whitelab/simview
 ```
 Then continue with the compilation:
 ```

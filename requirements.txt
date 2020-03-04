@@ -1,0 +1,6 @@
+# Dev/Development
+coverage
+pyzmq>=17.0.0b1
+fire 
+tqdm
+mbuild

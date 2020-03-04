@@ -3,12 +3,12 @@ from rdkit.Chem import AllChem, rdMolAlign
 from rdkit.Chem import Draw
 import hoomd, hoomd.md
 import hoomd.hzmq
-import math, numpy as np, gsd, gsd.hoomd, mbuild as mb, pickle
+import math, gsd, gsd.hoomd, mbuild as mb, pickle
 import os, fire
 from mbuild.utils.sorting import natural_sort
 from mbuild.utils.conversion import RB_to_OPLS
 
-def run(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, density = None, epsilon = 1.0, sigma = 1.0, particle_number=10000, steps=1e6, aspect_ratio=16 / 9, filename = None):
+def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, density = None, epsilon = 1.0, sigma = 1.0, particle_number=10000, steps=1e6, aspect_ratio=16 / 9, filename = None):
 
     def kT2F(kt):
         # correct for dof
@@ -135,7 +135,7 @@ def run(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, 
     hoomd.run(steps)
 
 if __name__ == '__main__':
-    fire.Fire(run)
+    fire.Fire(run_simulation)
 
 
 #hoomd ff file
