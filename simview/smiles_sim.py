@@ -3,12 +3,12 @@ from rdkit.Chem import AllChem, rdMolAlign
 from rdkit.Chem import Draw
 import hoomd, hoomd.md
 import hoomd.hzmq
-import math, numpy as np, gsd, gsd.hoomd, mbuild as mb, pickle
+import math, gsd, gsd.hoomd, mbuild as mb, pickle
 import os, fire
 from mbuild.utils.sorting import natural_sort
 from mbuild.utils.conversion import RB_to_OPLS
 
-def run(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, density = None, epsilon = 1.0, sigma = 1.0, particle_number=10000, steps=1e6, aspect_ratio=16 / 9, filename = None):
+def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, density = None, epsilon = 1.0, sigma = 1.0, particle_number=10000, steps=1e6, aspect_ratio=16 / 9, filename = None):
 
     def kT2F(kt):
         # correct for dof
@@ -23,12 +23,12 @@ def run(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, 
         return p * 4.184 * 6.022 * 10**23 / v2m3(1) * 101325 # kcal/mol/m^3 to atm
 
     #takes in a SMILES molecule
-    mol = Chem.MolFromSmiles(smiles_string) 
+    mol = Chem.MolFromSmiles(smiles_string)
     #adds hydrogen the the molecule
-    mol_w_hydrogens = Chem.AddHs(mol) 
+    mol_w_hydrogens = Chem.AddHs(mol)
     AllChem.EmbedMolecule(mol_w_hydrogens)
     #converts the SMILES molecule to a pdb file
-    Chem.MolToPDBFile(mol_w_hydrogens, smiles_string+'.pdb') 
+    Chem.MolToPDBFile(mol_w_hydrogens, smiles_string+'.pdb')
     #draw out the molecule as a diagnostic tool
     Draw.MolToFile(mol,'{}/smilesim.png'.format(os.getcwd()))
 
@@ -52,7 +52,9 @@ def run(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, 
     print('box size is:{}'.format(box))
 
     # Prepare FF for the system
-    param_sys, kwargs = prepare_hoomd(sys, forcefield_files=['oplsaa.xml'], forcefield_debug=False, box=box)
+    #ff_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'oplsaa.xml')
+    param_sys, kwargs = prepare_hoomd(sys, forcefield_debug=False, box=box)
+
     mb.formats.gsdwriter.write_gsd(param_sys, smiles_string+'.gsd', shift_coords=True, **kwargs)
     with open(result_dir + 'model.p', 'wb') as f:
         pickle.dump(param_sys, f)
@@ -134,13 +136,9 @@ def run(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, 
     c.sorter.disable()
     hoomd.run(steps)
 
-if __name__ == '__main__':
-    fire.Fire(run)
-
-
 #hoomd ff file
 #Setting up the forcefield
-def prepare_hoomd(compound,show_ports=False, forcefield_name=None,
+def prepare_hoomd(compound,show_ports=False, forcefield_name='oplsaa',
              forcefield_files=None, forcefield_debug=False, box=None,
              overwrite=False, residues=None, references_file=None,
              combining_rule='lorentz', **kwargs):
@@ -152,12 +150,12 @@ def prepare_hoomd(compound,show_ports=False, forcefield_name=None,
                         name=forcefield_name, debug=forcefield_debug)
         structure = ff.apply(structure, use_residue_map=False, references_file=references_file, maxiter=20, switchDistance=None,  **kwargs)
         structure.combining_rule = combining_rule
- 
+
     total_charge = sum([atom.charge for atom in structure])
     if round(total_charge, 4) != 0.0:
         print('System is not charge neutral. Total charge is {}.'
              ''.format(total_charge))
- 
+
     # Provide a warning if rigid_ids are not sequential from 0
     if compound.contains_rigid:
         unique_rigid_ids = sorted(set([p.rigid_id
@@ -167,7 +165,7 @@ def prepare_hoomd(compound,show_ports=False, forcefield_name=None,
     gsd_kwargs = dict()
     gsd_kwargs['rigid_bodies'] = [p.rigid_id for p in compound.particles()]
     return structure, gsd_kwargs
- 
+
 def insert_specials(frame, param_sys):
     pair_types = []
     pair_typeid = []
@@ -187,11 +185,11 @@ def insert_specials(frame, param_sys):
     frame.pairs.typeid = pair_typeid
     frame.pairs.group = pairs
     frame.pairs.N = len(pairs)
- 
+
 def pair_coeffs(system, param_sys, nlist, lj_fudge = 0.5, coul_fudge = 0.5):
     nlist.reset_exclusions(['1-2', '1-3', '1-4', 'body'])
     hoomd_lj = hoomd.md.pair.force_shifted_lj(r_cut=10.0, nlist=nlist)
- 
+
     # set-up 1,4 special pair interactions
     if system.pairs.types:
         hoomd_special_coul = hoomd.md.special_pair.coulomb()
@@ -220,7 +218,7 @@ def pair_coeffs(system, param_sys, nlist, lj_fudge = 0.5, coul_fudge = 0.5):
         #unclear how pppm is affected by this
         if hoomd_special_coul is not None:
             hoomd_special_coul.pair_coeff.set(t, alpha=coul_fudge, r_cut=2.0)
- 
+
 def bond_coeffs(system, hoomd_sim_system, param_sys,  constrain_hydrogens=True):
     bond_types = dict()
     for b in system.bonds.types:
@@ -243,21 +241,21 @@ def bond_coeffs(system, hoomd_sim_system, param_sys,  constrain_hydrogens=True):
     for bk,bv in bond_types.items():
         bonds.bond_coeff.set(bk, k=bv[0] * 2, r0=bv[1])
         print(bk, *bv)
- 
+
     if constrain_hydrogens:
         #set-up hydrogen covalent bond constraints
         for i in range(system.bonds.N):
             bi, bj = system.bonds.group[i]
             if system.particles.body[bi] == system.particles.body[bj]:
                 hoomd_sim_system.constraints.add(bi, bj,bond_types[system.bonds.types[system.bonds.typeid[i]]][1])
- 
+
 def angle_coeffs(system, param_sys):
     def get_angle_str(angle):
         t1, t2, t3 = angle.atom1.type, angle.atom2.type, angle.atom3.type
         t1, t3 = sorted([t1, t3], key=natural_sort)
         angle_type = ('-'.join((t1, t2, t3)))
         return angle_type
- 
+
     angle_types = dict()
     for a in system.angles.types:
         angle_types[a] = [0,0]
@@ -276,7 +274,7 @@ def angle_coeffs(system, param_sys):
     for ak,av in angle_types.items():
         angles.angle_coeff.set(ak, k=av[0] * 2, t0=av[1]  * math.pi / 180)
         print(ak, av[0] * 2, av[1]  * math.pi / 180)
- 
+
 def dihedral_coeffs(system, param_sys):
     def get_dihedral_str(dihedral):
         t1, t2 = dihedral.atom1.type, dihedral.atom2.type
@@ -286,10 +284,10 @@ def dihedral_coeffs(system, param_sys):
         else:
             dihedral_type = ('-'.join((t4, t3, t2, t1)))
         return dihedral_type
- 
+
     if not system.dihedrals.types:
         return
- 
+
     dihedral_types = dict()
     for d in system.dihedrals.types:
         dihedral_types[d] = None
@@ -308,4 +306,8 @@ def dihedral_coeffs(system, param_sys):
         print(dk, *dv)
 
 #end of hoomdff file
+
+def main():
+    fire.Fire(run_simulation)
+
 
