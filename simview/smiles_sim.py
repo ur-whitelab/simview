@@ -52,7 +52,7 @@ def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pre
     print('box size is:{}'.format(box))
 
     # Prepare FF for the system
-    param_sys, kwargs = prepare_hoomd(sys, forcefield_files=['oplsaa.xml'], forcefield_debug=False, box=box)
+    param_sys, kwargs = prepare_hoomd(sys, forcefield_debug=False, box=box)
     mb.formats.gsdwriter.write_gsd(param_sys, smiles_string+'.gsd', shift_coords=True, **kwargs)
     with open(result_dir + 'model.p', 'wb') as f:
         pickle.dump(param_sys, f)
@@ -136,7 +136,7 @@ def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pre
 
 #hoomd ff file
 #Setting up the forcefield
-def prepare_hoomd(compound,show_ports=False, forcefield_name=None,
+def prepare_hoomd(compound,show_ports=False, forcefield_name='oplsaa',
              forcefield_files=None, forcefield_debug=False, box=None,
              overwrite=False, residues=None, references_file=None,
              combining_rule='lorentz', **kwargs):
