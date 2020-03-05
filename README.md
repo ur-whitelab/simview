@@ -35,7 +35,7 @@ CXX=g++ CC=gcc cmake .. \
 -DPYTHON_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))") \
 -DPYTHON_EXECUTABLE=$(which python) \
 -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=ON -DENABLE_MPI=OFF -DBUILD_HPMC=off -DBUILD_CGCMM=off -DBUILD_MD=on \
--DBUILD_METAL=off -DBUILD_TESTING=off -DBUILD_DEPRECATED=off -DBUILD_MPCD=OFF \
+-DBUILD_METAL=off -DBUILD_TESTING=off -DBUILD_DEPRECATED=off -DSINGLE_PRECISION=ON -DBUILD_MPCD=OFF \
 -DCMAKE_INSTALL_PREFIX=`python -c "import site; print(site.getsitepackages()[0])"`
 ```
 
@@ -45,6 +45,8 @@ CXX=g++ CC=gcc cmake .. \
 	* `python python/smarter_broker.py A B` if you want two clients.
 2. For live simulations:
 	* `python python/launch_scripts/smiles_sim.py --smiles_string [string] --density [integer] --socket ["tcp://*:XXXX"]` to launch the simulation
-	* ssh tunnel from Bluehive to the machine where the broker is running: `ssh -N -L 8081:bhc0001:8080 YourNetIDHere@bluehive.circ.rochester.edu`, where 8081 should be replaced by the port that the broker is expecting and 8080 should be replaced by the port you instantiated the simulation with on BlueHive.
+	* ssh tunnel from Bluehive to the machine where the broker is running: `ssh -L 8080:localhost:8080 YourNetIDHere@bluehive.circ.rochester.edu`, where 8080 should be replaced by the port that the broker is expecting and 8080 should be replaced by the port you instantiated the simulation with on BlueHive.
+	* ssh into your interactive node using `ssh -4 -L 8080:localhost:8080 your_node` and start a simulation, for example with
+	`smiles_sim --smiles_string CO --period 100 --particle_number 500 --steps 10000 --density 786 --temperature 77 --pressure 1 --socket "tcp://*:8080"`
 
 3. For the client-side the only thing to make sure of is that the device is pointed at the correct ip address, namely the ip address for the machine where the broker is running. Currently this needs to be set in Unity in the BROKER_IP_ADDRESS variable for the FilterCommClient.cs (TODO: add support for changing the ip address in the client app itself).
