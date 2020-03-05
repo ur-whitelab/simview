@@ -48,7 +48,3 @@ CXX=g++ CC=gcc cmake .. \
 	* ssh tunnel from Bluehive to the machine where the broker is running: `ssh -N -L 8081:bhc0001:8080 YourNetIDHere@bluehive.circ.rochester.edu`, where 8081 should be replaced by the port that the broker is expecting and 8080 should be replaced by the port you instantiated the simulation with on BlueHive.
 
 3. For the client-side the only thing to make sure of is that the device is pointed at the correct ip address, namely the ip address for the machine where the broker is running. Currently this needs to be set in Unity in the BROKER_IP_ADDRESS variable for the FilterCommClient.cs (TODO: add support for changing the ip address in the client app itself).
-
-
-### tunnel.bat file
-This contains the putty command to start ssh with port forwarding. It uses a program called ‘plink’ and tunnels an RDP connection. The syntax of the port forward argument is the same as with the Linux version of ‘ssh’. The trouble with this is that the tunnel takes a minute to be established and it does not go away cleanly all the time. This is put into a .bat file on windows and then executed with a double click. The first line checks for an old connection and the last line is to wait until the tunnel comes up.
