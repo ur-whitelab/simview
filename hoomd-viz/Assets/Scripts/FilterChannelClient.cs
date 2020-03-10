@@ -63,6 +63,8 @@ public class FilterChannelClient : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Uncomment this line for Unity in Windows
+        // AsyncIO.ForceDotNet.Force();
         ZMQStartUp();
     }
 

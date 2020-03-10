@@ -128,8 +128,9 @@ def broker(sim_type_list=[]):
             instr_msg = instructor_pipe.recv_multipart()
             instr_msg_type = instr_msg[0]
             if instr_msg_type == b'sim-update':
-                pass
-                # latest_state_update = instr_msg[1]
+                latest_state_update = instr_msg[1]
+                latest_state_update = json.loads(latest_state_update)
+                print('This is from unity:{}'.format(latest_state_update))
                 # channels[active_channel].socket.send(latest_state_update, flags=zmq.NOBLOCK)
             if instr_msg_type == b'channel-change':
                 print('channel switched from ' + str(active_channel) + ' to ' + str(instr_msg[1]))
@@ -169,9 +170,7 @@ def broker(sim_type_list=[]):
                     if type(latest_state_update) is str:
                         latest_state_update = json.loads(latest_state_update)
                     latest_state_update = json.dumps(latest_state_update)
-                    print('This is from the broker:{}'.format(latest_state_update))
                     response_state_msg_update = [b'state-update', bytes(latest_state_update, encoding='utf-8')]
-                    print('This is response state: {}'.format(response_state_msg_update))
                     channels[i].socket.send_multipart(response_state_msg_update)
                     print('sent response state msg update')
                 #Should execute only for the activate simulation and only once the above init code has run.

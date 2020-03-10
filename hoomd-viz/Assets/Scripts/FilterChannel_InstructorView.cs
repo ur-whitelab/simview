@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using FlatBuffers;
 using HZMsg;
@@ -21,9 +21,20 @@ public class FilterChannel_InstructorView : MonoBehaviour
 
     private int num_channels = 1;//default to 1 channel.
 
+    //state variables
+    public float setTemperature = 77.0f;
+    private float scale = 1f;
+
+    bool isStateUpdated = false;
+
+    private System.TimeSpan waitTime = new System.TimeSpan(10, 0, 0);
+
     // Start is called before the first frame update
     void Start()
     {
+        // uncomment this line for Windows machines
+        // AsyncIO.ForceDotNet.Force();
+
         // set-up sockets
         upstream_address = BROKER_IP_ADDRESS + "5575";
 
@@ -45,11 +56,50 @@ public class FilterChannel_InstructorView : MonoBehaviour
                 var sendMsg = new NetMQMessage();
                 sendMsg.Append("channel-change");
                 sendMsg.Append(i.ToString());
-                upstreamSocket.TrySendMultipartMessage(new System.TimeSpan(10, 0, 0), sendMsg);
+                upstreamSocket.TrySendMultipartMessage(waitTime, sendMsg);
             }
         }
 
+        //look for state inputs
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        {
+            setTemperature += 1f;
+            isStateUpdated = true;
+        }
+        else if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        {
+            setTemperature -= 1f;
+            isStateUpdated = true;
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            scale = 1.05f;
+            isStateUpdated = true;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            Debug.Log("scaling down");
+            scale = 0.92f;
+            isStateUpdated = true;
+        }
 
+        Debug.Log("temperature: " + setTemperature);
+
+        if (isStateUpdated)
+        {
+            //new data to send to the broker
+            var newdata = new Dictionary<string, string>();
+            newdata["temperature"] = "" + setTemperature;
+            newdata["box"] = "" + scale;
+            string msgStr = JsonConvert.SerializeObject(newdata, Formatting.Indented);
+            var sendMsg = new NetMQMessage();
+            sendMsg.Append("sim-update");
+            sendMsg.Append(msgStr);
+            upstreamSocket.TrySendMultipartMessage(waitTime, sendMsg);
+
+        }
+
+        isStateUpdated = false;
 
     }
 }
