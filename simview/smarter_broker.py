@@ -1,7 +1,8 @@
 import zmq
 import time
 import fire, tqdm
-from simulation import SimulationChannel
+import json
+from .simulation import SimulationChannel
 
 def broker(sim_type_list=[]):
     print(str(len(sim_type_list)) + ' simulations requested from the command line')
@@ -34,7 +35,12 @@ def broker(sim_type_list=[]):
     instructor_pipe = context.socket(zmq.PAIR)
     instructor_pipe.bind('tcp://*:5575')
 
-    latest_state_update = {}
+    latest_state_update = {
+        'temperature': '77',
+        'pressure': '1',
+        'density': '{}'.format(700),
+        'box': '1'
+    }
 
     sim_ports = {
         'A': '8080',
@@ -122,7 +128,8 @@ def broker(sim_type_list=[]):
             instr_msg = instructor_pipe.recv_multipart()
             instr_msg_type = instr_msg[0]
             if instr_msg_type == b'sim-update':
-                latest_state_update = instr_msg[1]
+                pass
+                # latest_state_update = instr_msg[1]
                 # channels[active_channel].socket.send(latest_state_update, flags=zmq.NOBLOCK)
             if instr_msg_type == b'channel-change':
                 print('channel switched from ' + str(active_channel) + ' to ' + str(instr_msg[1]))
@@ -159,8 +166,13 @@ def broker(sim_type_list=[]):
                     print('num of bond messages in channel ' + str(i) + ' of type ' + str(channels[i].simulation_type) + ': ' + str(len(channels[i].bond_messages)))
                     print('number of initialized simulations: ' + str(initialized_simulations))
                 elif msg_type == b'state-update':
-                    response_state_msg_update = [b'state-update', latest_state_update]
-                    channel[i].socket.send_multipart(response_state_msg_update)
+                    if type(latest_state_update) is str:
+                        latest_state_update = json.loads(latest_state_update)
+                    latest_state_update = json.dumps(latest_state_update)
+                    print('This is from the broker:{}'.format(latest_state_update))
+                    response_state_msg_update = [b'state-update', bytes(latest_state_update, encoding='utf-8')]
+                    print('This is response state: {}'.format(response_state_msg_update))
+                    channels[i].socket.send_multipart(response_state_msg_update)
                     print('sent response state msg update')
                 #Should execute only for the activate simulation and only once the above init code has run.
                 elif (i == active_channel and channels[i].initialized):
