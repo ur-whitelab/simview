@@ -1,7 +1,7 @@
 import zmq
 import time
 import fire, tqdm
-from .simulation import SimulationChannel
+from simulation import SimulationChannel
 
 def broker(sim_type_list=[]):
     print(str(len(sim_type_list)) + ' simulations requested from the command line')
@@ -37,7 +37,7 @@ def broker(sim_type_list=[]):
     latest_state_update = {}
 
     sim_ports = {
-        'A': '5550',
+        'A': '8080',
         'B': '5551',
         'C': '5552',
         'D': '5553'
@@ -123,7 +123,7 @@ def broker(sim_type_list=[]):
             instr_msg_type = instr_msg[0]
             if instr_msg_type == b'sim-update':
                 latest_state_update = instr_msg[1]
-            #channels[active_channel].socket.send('')
+                # channels[active_channel].socket.send(latest_state_update, flags=zmq.NOBLOCK)
             if instr_msg_type == b'channel-change':
                 print('channel switched from ' + str(active_channel) + ' to ' + str(instr_msg[1]))
                 active_channel = int(instr_msg[1])
@@ -158,6 +158,10 @@ def broker(sim_type_list=[]):
                     print('num of name messages in channel ' + str(i) + ' of type ' + str(channels[i].simulation_type) + ': ' + str(len(channels[i].particle_name_messages)))
                     print('num of bond messages in channel ' + str(i) + ' of type ' + str(channels[i].simulation_type) + ': ' + str(len(channels[i].bond_messages)))
                     print('number of initialized simulations: ' + str(initialized_simulations))
+                elif msg_type == b'state-update':
+                    response_state_msg_update = [b'state-update', latest_state_update]
+                    channel[i].socket.send_multipart(response_state_msg_update)
+                    print('sent response state msg update')
                 #Should execute only for the activate simulation and only once the above init code has run.
                 elif (i == active_channel and channels[i].initialized):
                     # Look into adding this snippet
@@ -199,3 +203,6 @@ def broker(sim_type_list=[]):
 
 def main():
 	fire.Fire(broker)
+
+if __name__ == "__main__":
+    main()

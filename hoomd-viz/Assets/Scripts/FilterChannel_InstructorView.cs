@@ -14,7 +14,7 @@ using AsyncIO;
 
 public class FilterChannel_InstructorView : MonoBehaviour
 {
-    public string BROKER_IP_ADDRESS = "tcp://192.168.1.168:";
+    public string BROKER_IP_ADDRESS = "tcp://localhost:";
 
     private string upstream_address;
     private PairSocket upstreamSocket;
@@ -48,7 +48,7 @@ public class FilterChannel_InstructorView : MonoBehaviour
                 upstreamSocket.TrySendMultipartMessage(new System.TimeSpan(10, 0, 0), sendMsg);
             }
         }
-        
+
 
 
     }
