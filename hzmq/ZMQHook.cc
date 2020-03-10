@@ -73,7 +73,7 @@ void ZMQHook::update(unsigned int timestep)  {
       //auto frame = HZMsg::GetMutableFrame(m_fbb->GetBufferPointer());
       int Ni = 0;
       int count = 0;
-      std::cout << " N: " << N << std::endl;
+     // std::cout << " N: " << N << std::endl;
       for(unsigned int i = 0; i < N; i += m_N) {
         // our message will be either m_N or long enough to complete sending the positions
         // why doesn't std::min work here?
@@ -119,33 +119,33 @@ void ZMQHook::update(unsigned int timestep)  {
 
         // send over wire
         // message should already refer to flatbuffer pointer
-        multipart.send(m_socket);
+        multipart.send(m_socket, ZMQ_NOBLOCK);
         count += 1;
       }
 
-      std::cout << " num messages sent: " << count << std::endl;
+//      std::cout << " num messages sent: " << count << std::endl;
  
-      m_socket.send(zmq::message_t("frame-complete", 14));
+      m_socket.send(zmq::message_t("frame-complete", 14), ZMQ_NOBLOCK);
 
       // now send simulation state
       // set up message
-      if( (timestep / m_period) % 10 == 0) {
-        zmq::multipart_t multipart;
-        pybind11::object pystring = m_pyself.attr("get_state_msg")();
-        std::string s = pystring.cast<std::string>();
-        zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
-        multipart.addstr("state-update");
-        multipart.add(std::move(msg));
-        multipart.send(m_socket);
+      // if( (timestep / m_period) % 10 == 0) {
+      //   zmq::multipart_t multipart;
+      //   pybind11::object pystring = m_pyself.attr("get_state_msg")();
+      //   std::string s = pystring.cast<std::string>();
+      //   zmq::message_t msg(s.data(), s.length()); // the length should exclude the null terminator
+      //   multipart.addstr("state-update");
+      //   multipart.add(std::move(msg));
+      //   multipart.send(m_socket);
   
-        // now receive response
-        multipart.recv(m_socket);
-        // assume it's correct name
-        multipart.pop();
-        zmq::message_t reply = multipart.pop();
-        char* data = static_cast<char*>(reply.data());
-        m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
-      }
+      //   // now receive response
+      //   multipart.recv(m_socket);
+      //   // assume it's correct name
+      //   multipart.pop();
+      //   zmq::message_t reply = multipart.pop();
+      //   char* data = static_cast<char*>(reply.data());
+      //   m_pyself.attr("set_state_msg")(std::string(data, reply.size()));
+      // }
   }
 }
 //send bond data and particle names.
@@ -162,14 +162,14 @@ void ZMQHook::sendInitInfo() {
       ArrayHandle<Scalar4> positions_data(positions, access_location::host,
                            access_mode::read);
       std::cout << " num particles PN: " << pN << " ppN: " << ppN << std::endl;
-    for (int i = 0; i< pN; i++)
-  {
-    std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].y << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
-    std::cout << "pd name: " << m_pdata->getNameByType(positions_data.data[i].w) << std::endl;
+  //   for (int i = 0; i< pN; i++)
+  // {
+  //   std::cout << " pd x: " << positions_data.data[i].x << " pd y: " << positions_data.data[i].y << " pd z: " << positions_data.data[i].z << " pd w: " << positions_data.data[i].w << std::endl; 
+  //   std::cout << "pd name: " << m_pdata->getNameByType(positions_data.data[i].w) << std::endl;
 
-    unsigned int _t = m_pdata->getType(i);
-    std::cout << " type of particle " << i << ": " << _t << " name(_t): " << m_pdata->getNameByType(_t) << std::endl;
-  }
+  //   unsigned int _t = m_pdata->getType(i);
+  //   std::cout << " type of particle fixed j" << i << ": " << _t << " name(_t): " << m_pdata->getNameByType(_t) << std::endl;
+  // }
       //index,name
       for (unsigned int i = 0; i < pN; i+= m_b_N)
       {
@@ -377,3 +377,4 @@ void export_ZMQHook(pybind11::module& m)
       .def(pybind11::init< pybind11::object&, std::shared_ptr<SystemDefinition>, unsigned int, const char*, unsigned int>())
     ;
     }
+
