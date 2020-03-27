@@ -8,45 +8,84 @@ import os, fire
 from mbuild.utils.sorting import natural_sort
 from mbuild.utils.conversion import RB_to_OPLS
 
-def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, density = None, epsilon = 1.0, sigma = 1.0, particle_number=10000, steps=1e6, aspect_ratio=16 / 9, filename = None):
+def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pressure = 1, density = None, epsilon = 1.0, sigma = 1.0, particle_number=10000, steps=1e6, debug=False):
+    R""" This function sets up and runs a simulation in HOOMD-blue.
+
+    Parameters
+    ----------
+    smiles_string
+        The SMILES-encoded molecule to simulate.
+    socket
+        Address of the socket for hzmq to bind.
+    period
+        Number of timesteps between zmq updates, 1 by default for smoothness.
+    temperature
+        The temperature of the simulation, in degrees Fahrenheit.
+    pressure
+        The pressure of the simulation, in atmospheres.
+    density
+        The density used by mbuild to fill the box, in kilograms per cubic meter.
+    epsilon
+        Epsilon for Lennard-Jones interactions in reduced LJ (HOOMD-blue) units.
+    sigma
+        Epsilon for Lennard-Jones interactions in reduced LJ (HOOMD-blue) units.
+    particle_number
+        How many molecules to simulate.
+    steps
+        How many simulation steps to run.
+    debug
+        Whether to run in debug mode, which saves a PNG image of
+        the molecule that will be simulated
+    """
 
     def kT2F(kt):
-        # correct for dof
+        # converts from kT units to degrees Fahrenheit,
+        # correcting for degrees of freedom
         return (kt / (1.987 * 10**(-3) * 2 / 3) - 273) * 9 / 5 + 32
     def F2kT(t):
+        # converts from degrees Fahrenheit to kT units,
+        # correcting for degrees of freedom
         return ((t - 32) * 5/9 + 273) * 1.987 * 10**(-3) * 2 / 3
     def particles2mols(n):
+        # convert N, the raw particle count,
+        # to moles, with Avogadro's constant
         return n / 6.022 / 10**23
-    def v2m3(v):    #nm,to m^3
+    def v2m3(v):
+        # convert from cubit nanometers to cubic meters,
+        # with a minimum value cutoff of 1e-30
         return max(1e-30, v /  10**(-30))
     def p2atm(p):
-        return p * 4.184 * 6.022 * 10**23 / v2m3(1) * 101325 # kcal/mol/m^3 to atm
+        # convert pressure from kilocalories per mole per
+        # cubic meter to atmospheres
+        return p * 4.184 * 6.022 * 10**23 / v2m3(1) * 101325
 
-    #takes in a SMILES molecule
+    # take in a SMILES molecule
     mol = Chem.MolFromSmiles(smiles_string)
-    #adds hydrogen the the molecule
+    # add hydrogen the the molecule
     mol_w_hydrogens = Chem.AddHs(mol)
     AllChem.EmbedMolecule(mol_w_hydrogens)
-    #converts the SMILES molecule to a pdb file
+    # convert the SMILES molecule to a pdb file
     Chem.MolToPDBFile(mol_w_hydrogens, smiles_string+'.pdb')
-    #draw out the molecule as a diagnostic tool
-    Draw.MolToFile(mol,'{}/smilesim.png'.format(os.getcwd()))
+    # draw out the molecule as a diagnostic tool, if in debug mode
+    if debug:
+        Draw.MolToFile(mol,'{}/smilesim.png'.format(os.getcwd()))
 
-    #location of the directory that this script is in
-    result_dir ='{}'.format(os.getcwd())
+    # location of the directory that this script is in
+    result_dir = '{}'.format(os.getcwd())
     os.makedirs(result_dir, exist_ok=True)
 
-    #the following function takes in the pdb file created above
+    # this takes in the pdb file created above
     class Molecule(mb.Compound):
         def __init__(self,N):
             super(Molecule, self).__init__()
             mb.load(smiles_string +'.pdb', compound=self)
             self.translate(-self[0].pos)
 
-    glc_sys = Molecule(1)
-    sys = mb.fill_box(glc_sys, n_compounds = particle_number, density= density, edge = 0.25)
+    molecule_sys = Molecule(1)
+    sys = mb.fill_box(molecule_sys, n_compounds = particle_number, density= density, edge = 0.25)
     sys.translate(-sys.pos)
-    boxd = sys.periodicity[0] #nm
+    # get box side length, in nanometers
+    boxd = sys.periodicity[0]
     box = mb.Box(mins=3 * [-boxd / 2], maxs = 3 * [boxd / 2])
     sys.save(smiles_string+'.gsd', overwrite=True)
     print('box size is:{}'.format(box))
@@ -109,6 +148,9 @@ def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pre
     log = hoomd.analyze.log(filename=None, quantities=[k for k,_ in state_vars], period=1) #period // 10)
 
     def callback(sys):
+        R"""Queries HOOMD-blue for the system's particle number
+            and volume, computes density.
+        """
         result = {k: f(log.query(k)) for k,f in state_vars}
         result['density'] = result['num_particles'] / result['volume']
         return result
