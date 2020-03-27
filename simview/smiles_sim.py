@@ -82,74 +82,81 @@ def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pre
             self.translate(-self[0].pos)
 
     molecule_sys = Molecule(1)
+    # fill the box, leaving a little bit of margin (0.25 nanometers) around the edges
     sys = mb.fill_box(molecule_sys, n_compounds = particle_number, density= density, edge = 0.25)
+    # re-center the system
     sys.translate(-sys.pos)
     # get box side length, in nanometers
     boxd = sys.periodicity[0]
+    # make the box object with the fetched size
     box = mb.Box(mins=3 * [-boxd / 2], maxs = 3 * [boxd / 2])
+    # save the system as a GSD file for HOOMD to load
     sys.save(smiles_string+'.gsd', overwrite=True)
-    print('box size is:{}'.format(box))
+    if debug:
+        print('box size is:{}'.format(box))
 
-    # Prepare FF for the system
-    #ff_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'oplsaa.xml')
+    # Prepare the force field and the system, including the rigid body kwargs
     param_sys, kwargs = prepare_hoomd(sys, forcefield_debug=False, box=box)
 
+    # write out the GSD file, now with force field
     mb.formats.gsdwriter.write_gsd(param_sys, smiles_string+'.gsd', shift_coords=True, **kwargs)
+    # save system params to a pickle file
     with open(result_dir + 'model.p', 'wb') as f:
         pickle.dump(param_sys, f)
 
-    #Need to edit to add special pairs
+    # need to edit to add special pairs
     g = gsd.hoomd.open(smiles_string + '.gsd')
     frame = g[0]
     rcut = 10
 
-    c = hoomd.context.initialize('')
+    # start up HOOMD
+    context = hoomd.context.initialize('')
     system = hoomd.init.read_gsd(filename = smiles_string + '.gsd')
 
     nlist = hoomd.md.nlist.cell(r_buff=0.001, check_period=1)
     pair_coeffs(frame, param_sys, nlist)
 
-    #set-up pppm
-    charged = hoomd.group.all();
+    # set up pppm
+    charged = hoomd.group.all()
     pppm = hoomd.md.charge.pppm(nlist=nlist, group=charged)
     pppm.set_params(Nx=32, Ny=32, Nz=32, order=6, rcut=rcut)
 
-    #set-up bonds
+    # set up bonds
     bond_coeffs(frame, system, param_sys)
 
-    #set-up angles
+    # set up angles
     angle_coeffs(frame, param_sys)
 
-    #set-up dihedrals
+    # set up dihedrals
     dihedral_coeffs(frame, param_sys)
 
-    #free particles from rigid bodies since rigid doesn't quite work for us
+    # free particles from rigid bodies since rigid doesn't quite work for us
     for i in range(frame.particles.N):
         system.particles[i].body = -1
     group_all = hoomd.group.all()
-    #time 1 = 48.9 fs
-    #emin
+    # time in HOOMD: 1 step = 48.9 fs, based on our units
+    # emin
+    # get our kT value
     kT = F2kT(temperature) # 1.9872 / 1000
-    # init_dump = hoomd.dump.gsd(filename= 'init.gsd', period=1, group=group_all, phase=0, overwrite=True)
 
     state_vars = [('temperature', kT2F), ('volume', v2m3), ('num_particles', particles2mols), ('pressure', p2atm), ('lx', lambda x: x), ('ly', lambda x: x), ('lz', lambda x:x)]
 
+    # log state variable outputs every 10th update period
     log = hoomd.analyze.log(filename=None, quantities=state_vars, period=period // 10)
 
-    #bonds are constrained, so can use 2 ps
-    #NOT ANYMORE
+    # this is where we convert 0.4fs to HOOMD steps
     hoomd.md.integrate.mode_standard(dt=0.4 / 48.9)
+    # dump the NVT trajectory as a GSD file
     nvt_dump = hoomd.dump.gsd(filename= smiles_string +  '_trajectory.gsd', period=1, group=group_all, phase=0, overwrite=True)
+    # set up our integrator
     nvt = hoomd.md.integrate.nvt(group=hoomd.group.all(), kT=kT, tau=0.15)
     nvt.randomize_velocities(1)
 
-    state_vars = [('temperature', kT2F), ('volume', v2m3), ('num_particles', particles2mols), ('pressure', p2atm), ('lx', lambda x: x), ('ly', lambda x: x), ('lz', lambda x:x)]
-
-    log = hoomd.analyze.log(filename=None, quantities=[k for k,_ in state_vars], period=1) #period // 10)
+    log = hoomd.analyze.log(filename=None, quantities=[k for k,_ in state_vars], period=1)
 
     def callback(sys):
         R"""Queries HOOMD-blue for the system's particle number
-            and volume, computes density.
+            and volume, computes density as N_particles per cubic meter.
         """
         result = {k: f(log.query(k)) for k,f in state_vars}
         result['density'] = result['num_particles'] / result['volume']
@@ -172,14 +179,12 @@ def run_simulation(smiles_string, socket=None, period = 1, temperature = 77, pre
                 hoomd.update.box_resize(Lx=scale * log.query('lx') , Ly=scale * log.query('ly'), Lz=scale * log.query('lz'), period=None, scale_particles=True)
         print(data)
 
-    #equilibrate
-   # hoomd.run(1e3)
+    # equilibrate
     hoomd.hzmq.hzmq(socket, period=period, message_size=400, state_callback=callback, set_state_callback=set_callback)
-    c.sorter.disable()
+    context.sorter.disable()
     hoomd.run(steps)
 
-#hoomd ff file
-#Setting up the forcefield
+# Make the HOOMD force field file
 def prepare_hoomd(compound,show_ports=False, forcefield_name='oplsaa',
              forcefield_files=None, forcefield_debug=False, box=None,
              overwrite=False, residues=None, references_file=None,
@@ -216,7 +221,7 @@ def insert_specials(frame, param_sys):
         return '-'.join(sorted([t1, t2], key=natural_sort))
     for ai in param_sys.atoms:
         for aj in ai.dihedral_partners:
-            #make sure we don't double add
+            # make sure we don't double add
             if ai.idx > aj.idx:
                 ps = to_pair_str(ai.type, aj.type)
                 if ps not in pair_types:
@@ -228,11 +233,11 @@ def insert_specials(frame, param_sys):
     frame.pairs.group = pairs
     frame.pairs.N = len(pairs)
 
+# set up 1,4 special pair interactions
 def pair_coeffs(system, param_sys, nlist, lj_fudge = 0.5, coul_fudge = 0.5):
     nlist.reset_exclusions(['1-2', '1-3', '1-4', 'body'])
     hoomd_lj = hoomd.md.pair.force_shifted_lj(r_cut=10.0, nlist=nlist)
 
-    # set-up 1,4 special pair interactions
     if system.pairs.types:
         hoomd_special_coul = hoomd.md.special_pair.coulomb()
         hoomd_special_lj = hoomd.md.special_pair.lj()
@@ -285,7 +290,7 @@ def bond_coeffs(system, hoomd_sim_system, param_sys,  constrain_hydrogens=True):
         print(bk, *bv)
 
     if constrain_hydrogens:
-        #set-up hydrogen covalent bond constraints
+        # set up hydrogen covalent bond constraints
         for i in range(system.bonds.N):
             bi, bj = system.bonds.group[i]
             if system.particles.body[bi] == system.particles.body[bj]:
@@ -347,7 +352,7 @@ def dihedral_coeffs(system, param_sys):
         dihedrals.dihedral_coeff.set(dk, **{'k{}'.format(i+1):v for i,v in enumerate(RB_to_OPLS(*dv))})
         print(dk, *dv)
 
-#end of hoomdff file
+# end of hoomd force field file
 
 def main():
     fire.Fire(run_simulation)
