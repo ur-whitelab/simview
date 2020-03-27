@@ -169,6 +169,7 @@ public class SceneManager : MonoBehaviour
         if (current_active_channel != active_channel)
         {
             vrCC.forceFPSToMatchHoomd = false;
+	    // temperature is in degrees Fahrenheit
             simInterface.setTemperature = 0.15f;
             var sendMsg = new NetMQMessage();
             sendMsg.Append("ac-change");

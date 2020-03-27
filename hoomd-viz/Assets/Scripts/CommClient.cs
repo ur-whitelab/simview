@@ -26,7 +26,6 @@ public class CommClient : MonoBehaviour
     public event NewFrameAction OnNewFrame;
     public event CompleteFrameAction OnCompleteFrame;
     public event SimulationUpdateAction OnSimulationUpdate;
-  //  private PairSocket FrameClient;
     private DealerSocket FrameClient;    
 
     private System.TimeSpan waitTime = new System.TimeSpan(0, 0, 0);
@@ -50,7 +49,7 @@ public class CommClient : MonoBehaviour
         Debug.Log("client id: " + client_id);
 
         ForceDotNet.Force();
-        // set-up sockets and poller
+        // set up sockets and poller
         //FrameClient = new PairSocket();
         FrameClient = new DealerSocket();
         FrameClient.Options.Identity = System.Text.Encoding.UTF8.GetBytes("client-" + client_id);

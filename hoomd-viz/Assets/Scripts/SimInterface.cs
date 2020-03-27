@@ -11,6 +11,7 @@ public class SimInterface : MonoBehaviour
     public GameObject DensityText;
     public GameObject PressureText;
 
+    // temperature is in degrees Fahrenheit, starts below freezing
     public float setTemperature = 0.15f;
     private float scale = 1f;
 
@@ -28,12 +29,12 @@ public class SimInterface : MonoBehaviour
         if (data.ContainsKey("temperature"))
         {
             var text = TemperatureText.GetComponent<Text>();
-            text.text = "Temperature: " + Math.Round(float.Parse(data["temperature"]), 3) + " C " + "(" + Math.Round(setTemperature, 2) + " C)";
+            text.text = "Temperature: " + Math.Round(float.Parse(data["temperature"]), 3) + " °F " + "(" + Math.Round(setTemperature, 2) + " C)";
         }
         else
         {
             var text = TemperatureText.GetComponent<Text>();
-            text.text = "Temperature: " + "(" + Math.Round(setTemperature, 2) + "C)";
+            text.text = "Temperature: " + "(" + Math.Round(setTemperature, 2) + " °F)";
         }
 
         if (data.ContainsKey("density"))

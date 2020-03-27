@@ -21,7 +21,8 @@ public class FilterChannel_InstructorView : MonoBehaviour
 
     private int num_channels = 1;//default to 1 channel.
 
-    //state variables
+    // state variables
+    // temperature in degrees Fahrenheit
     public float setTemperature = 77.0f;
     private float scale = 1f;
 
@@ -35,7 +36,7 @@ public class FilterChannel_InstructorView : MonoBehaviour
         // uncomment this line for Windows machines
         // AsyncIO.ForceDotNet.Force();
 
-        // set-up sockets
+        // set up sockets
         upstream_address = BROKER_IP_ADDRESS + "5575";
 
         upstreamSocket = new PairSocket();
