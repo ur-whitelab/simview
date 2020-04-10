@@ -57,50 +57,52 @@ CXX=g++ CC=gcc cmake .. \
 -DCMAKE_INSTALL_PREFIX=`python -c "import site; print(site.getsitepackages()[0])"`
 ```
 
-### Running Unity Scene
+## Running Unity Scene
 
-1. broker.py is the broker. Run this on a machine with open ports and a static ip address.
-	* Run command:
+### Broker
 
-		```bash
-		python simview/broker.py  A,B,C  4000,4001,4002
-		```
+Run the `broker.py` script on a machine with open ports and a static ip address.
 
-		or use the entry point as:
+Run command:
 
-		```bash
-		broker  A,B,C  4000,4001,4002
-		```
+```bash
+python simview/broker.py  A,B,C  4000,4001,4002
+```
 
-		if you want three clients (AR/VR devices to visualize simulations). The number of ports provided must match the number of simulations asked for, three in this example.
+or use the entry point:
 
-2. For live simulations:
-	* ssh tunnel from Bluehive to the machine where the broker is running:
-	
-		```bash
-		ssh -L 8080:localhost:8080 YourNetIDHere@bluehive.circ.rochester.edu
-		```
-	
-		where 8080 should be replaced by the port that the broker is expecting and the port on which you instantiated the simulation on BlueHive.
-	
-	* ssh into your interactive node using
-	
-		```bash
-		ssh -4 -L 8080:localhost:8080 your_node
-		``` 
-	
-		and start a simulation wth the commands below.
+```bash
+broker  A,B,C  4000,4001,4002
+```
 
-	* To launch a simulation, run the `smile_sim.py` script.
-	    
-		```bash
-	    python simview/smiles_sim.py --smiles_string [string] --density [integer] --socket ["tcp://*:XXXX"]
-	    ```
-	    
-		You can also use the entry point to launch a simulation:
-		
-		```bash
-		smiles_sim --smiles_string [string] --socket ["tcp://*:xxxx"] --period [integer] --particle_number [integer] --steps [integer] --density [float] --temperature [float] --pressure [float]
-		```
+if you want three clients (AR/VR devices to visualize simulations). The number of ports provided must match the number of simulations asked for, three in this example.
 
-3. For the client-side the only thing to make sure of is that the device is pointed at the correct ip address, namely the ip address for the machine where the broker is running. Currently this needs to be set in Unity in the BROKER_IP_ADDRESS variable for the FilterCommClient.cs (TODO: add support for changing the ip address in the client app itself).
+### Running the Simulation
+
+Create a ssh tunnel from Bluehive to the machine where the broker is running:
+
+```bash
+ssh -L 8080:localhost:8080 YourNetIDHere@bluehive.circ.rochester.edu
+```
+
+where 8080 should be replaced by the port that the broker is expecting and the port on Bluehive where you instantiated the simulation.
+
+Then ssh into your interactive node.
+
+```bash
+ssh -4 -L 8080:localhost:8080 your_node
+``` 
+
+Then launch a simulation, by running the `smile_sim.py` script.
+
+```bash
+python simview/smiles_sim.py --smiles_string [string] --density [integer] --socket ["tcp://*:XXXX"]
+```
+
+You can also use the entry point to launch a simulation:
+
+```bash
+smiles_sim --smiles_string [string] --socket ["tcp://*:xxxx"] --period [integer] --particle_number [integer] --steps [integer] --density [float] --temperature [float] --pressure [float]
+```
+
+**Note:** On the client-side, the only thing to be careful of is that the device is pointed at the correct IP address, namely the IP address for the machine where the broker is running. Currently, this needs to be set in Unity in the BROKER_IP_ADDRESS variable for the FilterCommClient.cs (TODO: add support for changing the ip address in the client app itself).
