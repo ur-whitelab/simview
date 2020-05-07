@@ -42,9 +42,6 @@ build/*
 *.aux
 *.log
 
-Images
-*.png
-
 #VScode
 *.vscode
 
