@@ -432,7 +432,7 @@ public class vrCommClient : MonoBehaviour
 
     private void zmqStartUp()
     {
-        // set-up sockets
+        // set up sockets
         string upstream_port_address = BROKER_IP_ADDRESS + "5571";
         string downstream_port_address = BROKER_IP_ADDRESS + "5572";
 

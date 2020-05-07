@@ -259,7 +259,7 @@ public class FilterChannelClient : MonoBehaviour
 
     private void ZMQStartUp()
     {
-        // set-up sockets
+        // set up sockets
         downstream_address = BROKER_IP_ADDRESS + "5572";
         initialization_address = BROKER_IP_ADDRESS + "5573";
         active_channel_socket_address = BROKER_IP_ADDRESS + "5574";
