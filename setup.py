@@ -27,7 +27,7 @@ setup(name='simview',
       entry_points=
        {
          'console_scripts': [
-           'broker=simview.smarter_broker:main',
+           'broker=simview.broker:main',
            'smiles_sim=simview.smiles_sim:main'
           ],
        }
